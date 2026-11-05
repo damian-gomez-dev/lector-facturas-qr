@@ -246,12 +246,23 @@ st.markdown("""
         width: 100%;
     }
     
-    /* Forzar ancho completo y centrado en los botones de Streamlit */
-    .row-widget.stButton, .stButton, .stButton > button {
+        /* Estilo para que el botón ocupe el 100% del ancho del contenedor y esté alineado con las tarjetas */
+    .stButton {
         width: 100% !important;
-        display: block !important;
     }
     .stButton > button {
+        width: 100% !important;
+        display: block !important;
+        background-color: #3B86B6 !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 16px 32px !important;
+        font-size: 1.05rem !important;
+        box-shadow: 0 4px 10px rgba(59, 134, 182, 0.3) !important;
+        box-sizing: border-box !important;
+    }    .stButton > button {
         background-color: #3B86B6 !important;
         color: #FFFFFF !important;
         font-weight: 700 !important;
@@ -319,12 +330,9 @@ with col3:
 
 st.write("") # Espaciador estético
 
-# Crear columnas para centrar el botón de procesamiento
-col_izq, col_centro, col_der = st.columns([1, 2, 1])
-with col_centro:
-    procesar_click = st.button("🚀 Procesar Facturas")
+procesar_facturas = st.button("🚀 Procesar Facturas")
 
-if procesar_click and uploaded_files:
+if procesar_facturas and uploaded_files:
     
     with tempfile.TemporaryDirectory() as temp_dir:
         
