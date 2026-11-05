@@ -251,14 +251,15 @@ st.markdown("""
         width: 100%;
     }
     div.stButton > button {
+        text-align: center;
         background-color: #3B86B6;
         color: #FFFFFF;
         font-weight: 700;
-        border-radius: 6px;
+        border-radius: 8px;
         border: none;
         padding: 16px 32px;
         width: 100%;
-        font-size: 1.15rem;
+        font-size: 0.88rem;
         box-shadow: 0 4px 10px rgba(59, 134, 182, 0.3);
         transition: all 0.2s ease;
         margin-top: 10px;
@@ -296,13 +297,13 @@ st.markdown("""
 </style>
 
 <div class="hero-generic">
-    <h1>📂 Portal de Escaneo de Facturas QR AFIP</h1>
-    <p>Sistema automatizado de procesamiento para el sector de Discapacidad</p>
+    <h1>📂 Portal de Escaneo de Facturas Discapacidad</h1>
+    <p>Sistema de procesamiento automatizado</p>
 </div>
 
 <div class="section-card">
     <h3>📄 Carga de Comprobantes</h3>
-    <p>Subí tus facturas en formato PDF para extraer automáticamente los datos del código QR de AFIP, período y DNI.</p>
+    <p>Subí tus facturas en formato PDF para extraer automáticamente sus datos, incluyendo período de prestación y DNI del afiliado.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -432,6 +433,6 @@ if st.button("🚀 Procesar Facturas") and uploaded_files:
 
 st.markdown("""
 <div class="footer-generic">
-    Portal Genérico de Auditoría y Procesamiento de Facturas de Discapacidad
+    Portal de Procesamiento de Facturas de Discapacidad
 </div>
 """, unsafe_allow_html=True)
