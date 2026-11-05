@@ -319,7 +319,12 @@ with col3:
 
 st.write("") # Espaciador estético
 
-if st.button("🚀 Procesar Facturas") and uploaded_files:
+# Crear columnas para centrar el botón de procesamiento
+col_izq, col_centro, col_der = st.columns([1, 2, 1])
+with col_centro:
+    procesar_click = st.button("🚀 Procesar Facturas")
+
+if procesar_click and uploaded_files:
     
     with tempfile.TemporaryDirectory() as temp_dir:
         
