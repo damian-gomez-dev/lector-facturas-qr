@@ -230,7 +230,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         margin-bottom: 16px;
     }
-    /* Centrar el texto e instrucciones dentro del uploader de Streamlit */
     [data-testid="stFileUploader"] section {
         text-align: center;
         display: flex;
@@ -246,7 +245,11 @@ st.markdown("""
         text-align: center;
         width: 100%;
     }
-    /* Botón principal de procesamiento grande ocupando todo el ancho */
+    
+    /* Hacemos que el botón principal de Streamlit ocupe el 100% de su contenedor */
+    div.stButton {
+        width: 100%;
+    }
     div.stButton > button {
         background-color: #3B86B6;
         color: #FFFFFF;
@@ -287,6 +290,8 @@ st.markdown("""
         border-radius: 8px;
         margin-top: 40px;
         font-size: 0.88rem;
+        width: 100%;
+        box-sizing: border-box;
     }
 </style>
 
