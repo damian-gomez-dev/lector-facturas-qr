@@ -186,7 +186,7 @@ st.markdown("""
         border-radius: 8px;
         border-bottom: 5px solid #F2C12E;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        margin-bottom: 28px;
+        margin-bottom: 15px;
     }
     .hero-generic h1 {
         color: #FFFFFF !important;
@@ -208,7 +208,7 @@ st.markdown("""
         border-radius: 8px;
         padding: 20px 24px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     .section-card h3 {
         color: #2A658C !important;
@@ -246,11 +246,14 @@ st.markdown("""
         width: 100%;
     }
     
-    /* Hacemos que el botón principal de Streamlit ocupe el 100% de su contenedor */
+    /* Forzar al contenedor del botón a ocupar el 100% y estirar el botón de punta a punta */
     div.stButton {
         width: 100%;
+        display: block;
     }
     div.stButton > button {
+        display: block;
+        width: 100%;
         text-align: center;
         background-color: #3B86B6;
         color: #FFFFFF;
@@ -258,11 +261,11 @@ st.markdown("""
         border-radius: 8px;
         border: none;
         padding: 16px 32px;
-        width: 100%;
-        font-size: 0.88rem;
+        font-size: 1.05rem;
         box-shadow: 0 4px 10px rgba(59, 134, 182, 0.3);
         transition: all 0.2s ease;
         margin-top: 10px;
+        box-sizing: border-box;
     }
     div.stButton > button:hover {
         background-color: #2A658C;
@@ -289,7 +292,7 @@ st.markdown("""
         padding: 18px;
         text-align: center;
         border-radius: 8px;
-        margin-top: 40px;
+        margin-top: 15px;
         font-size: 0.88rem;
         width: 100%;
         box-sizing: border-box;
@@ -298,7 +301,7 @@ st.markdown("""
 
 <div class="hero-generic">
     <h1>📂 Portal de Escaneo de Facturas Discapacidad</h1>
-    <p>Sistema de procesamiento automatizado</p>
+    <p>Sistema de procesamiento automatizado para facturas de Mecanismo de Integración</p>
 </div>
 
 <div class="section-card">
