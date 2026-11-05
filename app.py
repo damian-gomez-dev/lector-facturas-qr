@@ -246,26 +246,22 @@ st.markdown("""
         width: 100%;
     }
     
-    /* Forzar al contenedor del botón a ocupar el 100% y estirar el botón de punta a punta */
-    div.stButton {
-        width: 100%;
-        display: block;
+    /* Forzar ancho completo y centrado en los botones de Streamlit */
+    .row-widget.stButton, .stButton, .stButton > button {
+        width: 100% !important;
+        display: block !important;
     }
-    div.stButton > button {
-        display: block;
-        width: 100%;
-        text-align: center;
-        background-color: #3B86B6;
-        color: #FFFFFF;
-        font-weight: 700;
-        border-radius: 8px;
-        border: none;
-        padding: 16px 32px;
-        font-size: 1.05rem;
-        box-shadow: 0 4px 10px rgba(59, 134, 182, 0.3);
-        transition: all 0.2s ease;
-        margin-top: 10px;
-        box-sizing: border-box;
+    .stButton > button {
+        background-color: #3B86B6 !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 16px 32px !important;
+        font-size: 1.05rem !important;
+        box-shadow: 0 4px 10px rgba(59, 134, 182, 0.3) !important;
+        box-sizing: border-box !important;
+        margin: 0 auto !important;
     }
     div.stButton > button:hover {
         background-color: #2A658C;
