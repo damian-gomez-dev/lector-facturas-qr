@@ -42,65 +42,78 @@ st.markdown(
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 3rem;
-        max-width: 1380px;
+        max-width: 1120px;
     }
 
-    /* Cabecera principal estilo SAPI Web */
+    /* Cabecera principal estilo SAPI Web (100% ancho y simétrica) */
     .sapi-header {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1d4ed8 100%);
         border-radius: 16px;
-        padding: 1.4rem 1.75rem;
+        padding: 1.5rem 1.75rem;
         color: #ffffff;
         box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18);
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.15rem;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
+        text-align: center;
+        gap: 0.65rem;
+        width: 100%;
+        box-sizing: border-box;
     }
     .sapi-header-title {
-        font-size: 1.55rem;
+        font-size: 1.6rem;
         font-weight: 800;
         letter-spacing: -0.02em;
         margin: 0;
         color: #ffffff;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.6rem;
     }
     .sapi-header-sub {
-        font-size: 0.9rem;
+        font-size: 0.92rem;
         color: #cbd5e1;
-        margin: 0.25rem 0 0 0;
+        margin: 0.2rem 0 0 0;
+        text-align: center;
     }
     .sapi-badge-demo {
         background: rgba(255, 255, 255, 0.14);
         border: 1px solid rgba(255, 255, 255, 0.28);
         color: #f8fafc;
-        padding: 0.45rem 0.9rem;
+        padding: 0.4rem 1rem;
         border-radius: 999px;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 700;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.03em;
         backdrop-filter: blur(6px);
+        display: inline-block;
     }
 
-    /* Stepper de 3 pasos */
+    /* Stepper de 3 pasos (100% ancho y tarjetas de igual alto y simetría) */
     .sapi-stepper {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.85rem;
-        margin-bottom: 1.4rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.9rem;
+        margin-top: 0.4rem;
+        margin-bottom: 1.15rem;
+        width: 100%;
+        box-sizing: border-box;
     }
     .sapi-step {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 0.85rem 1.1rem;
+        padding: 0.95rem 1.15rem;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.85rem;
+        min-height: 82px;
+        height: 100%;
+        box-sizing: border-box;
         transition: all 0.2s ease;
     }
     .sapi-step.active {
@@ -137,7 +150,7 @@ st.markdown(
         font-weight: 700;
         font-size: 0.92rem;
         color: #334155;
-        margin: 0;
+        margin: 0 0 0.15rem 0;
     }
     .sapi-step.active .sapi-step-label {
         color: #1e40af;
@@ -146,9 +159,10 @@ st.markdown(
         color: #166534;
     }
     .sapi-step-desc {
-        font-size: 0.76rem;
+        font-size: 0.78rem;
         color: #64748b;
         margin: 0;
+        line-height: 1.3;
     }
 
     /* Tarjetas contenedoras */
@@ -261,22 +275,31 @@ st.markdown(
         font-family: monospace;
     }
 
-    /* Centrado de menú de carga de PDFs */
+    /* Centrado y simetría de tarjetas y controles en Paso 1 */
     .sapi-card-centered {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
-        padding: 1.25rem 1.4rem;
+        padding: 1.25rem 1.5rem;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-        margin-bottom: 0.85rem;
+        margin-bottom: 0.9rem;
         text-align: center;
+        width: 100%;
+        box-sizing: border-box;
     }
-    [data-testid="stFileUploader"] label {
+    [data-testid="stFileUploader"] {
+        width: 100% !important;
+    }
+    [data-testid="stFileUploader"] label,
+    [data-testid="stTextInput"] label {
         display: flex !important;
         justify-content: center !important;
         width: 100% !important;
         text-align: center !important;
         font-weight: 600 !important;
+    }
+    [data-testid="stTextInput"] input {
+        text-align: center !important;
     }
 </style>
 """,
@@ -347,22 +370,20 @@ def render_cabecera_y_stepper() -> None:
 
     paso = st.session_state["paso_actual"]
 
-    # Campo de CUIT ubicado entre el título principal y los 3 cuadros de pasos
-    _, col_cuit_center, _ = st.columns([1.1, 1.8, 1.1])
-    with col_cuit_center:
-        cuit_raw = st.text_input(
-            "🏛️ CUIT Institucional (Opcional)",
-            value=st.session_state["cuit_institucional_input"],
-            placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
-            disabled=(paso != "seleccion"),
-        )
-        st.session_state["cuit_institucional_input"] = cuit_raw
-        cuit_valido, _, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
-        if cuit_raw.strip():
-            if cuit_valido:
-                st.success(f"✅ {msg_cuit}")
-            else:
-                st.error(f"⚠️ {msg_cuit}")
+    # Campo de CUIT del mismo ancho completo (100%), ubicado entre el título y los 3 pasos
+    cuit_raw = st.text_input(
+        "🏛️ CUIT Institucional (Opcional)",
+        value=st.session_state["cuit_institucional_input"],
+        placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
+        disabled=(paso != "seleccion"),
+    )
+    st.session_state["cuit_institucional_input"] = cuit_raw
+    cuit_valido, _, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
+    if cuit_raw.strip():
+        if cuit_valido:
+            st.success(f"✅ {msg_cuit}")
+        else:
+            st.error(f"⚠️ {msg_cuit}")
 
     clase_1 = "active" if paso == "seleccion" else "done"
     clase_2 = "active" if paso == "informe" else ("done" if paso == "revision" else "")
@@ -386,14 +407,14 @@ def render_cabecera_y_stepper() -> None:
                 <div class="sapi-step-num">{icono_2}</div>
                 <div>
                     <p class="sapi-step-label">2. Informe de Validación</p>
-                    <p class="sapi-step-desc">Resultado del escaneo QR y adaptación SSSalud (1 página)</p>
+                    <p class="sapi-step-desc">Escaneo QR y adaptación SSSalud (1 página)</p>
                 </div>
             </div>
             <div class="sapi-step {clase_3}">
                 <div class="sapi-step-num">{icono_3}</div>
                 <div>
                     <p class="sapi-step-label">3. Revisión y Autorización</p>
-                    <p class="sapi-step-desc">Codificación Nomenclador SSSalud, DNI, Período y exportación</p>
+                    <p class="sapi-step-desc">Codificación SSSalud, DNI, Período y exportación</p>
                 </div>
             </div>
         </div>
@@ -403,113 +424,110 @@ def render_cabecera_y_stepper() -> None:
 
 
 # ==============================================================================
-# PASO 1: SELECCIÓN DE PDFs (CENTRADO)
+# PASO 1: SELECCIÓN DE PDFs (MISMO ANCHO COMPLETO Y SIMÉTRICO)
 # ==============================================================================
 def render_paso_1_seleccion() -> None:
     cuit_raw = st.session_state.get("cuit_institucional_input", "")
     cuit_valido, cuit_limpio, _ = validar_formato_cuit_opcional(cuit_raw)
 
-    _, col_up, _ = st.columns([0.55, 2.4, 0.55])
+    st.markdown(
+        f"""
+        <div class="sapi-card-centered">
+            <p class="sapi-card-title" style="text-align: center;">📂 Selección de Facturas Digitales en PDF</p>
+            <p class="sapi-card-sub" style="text-align: center; margin-bottom: 0;">
+                Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.<br>
+                <b>Límite de versión Demo: hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF por tanda</b> (máx. 15 MB por archivo).
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with col_up:
+    uploaded_files = st.file_uploader(
+        f"Seleccione hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF",
+        type=["pdf"],
+        accept_multiple_files=True,
+        key=f"pdf_uploader_{st.session_state['uploader_key']}",
+    )
+
+    if uploaded_files:
+        total_subidos = len(uploaded_files)
+        excede_limite = total_subidos > MAX_PDFS_POR_TANDA_DEMO
+
+        if excede_limite:
+            st.warning(
+                f"⚠️ **Límite de Versión Demo ({MAX_PDFS_POR_TANDA_DEMO} PDFs por tanda):** "
+                f"Ha seleccionado **{total_subidos} archivos**. Se procesarán únicamente los **primeros {MAX_PDFS_POR_TANDA_DEMO} PDFs** "
+                f"y se omitirán los {total_subidos - MAX_PDFS_POR_TANDA_DEMO} restantes."
+            )
+
+        archivos_activos = uploaded_files[:MAX_PDFS_POR_TANDA_DEMO]
+        archivos_omitidos = uploaded_files[MAX_PDFS_POR_TANDA_DEMO:]
+
+        # Tabla resumen de archivos seleccionados
+        df_files = pd.DataFrame([
+            {
+                "#": idx + 1,
+                "Archivo PDF": f.name,
+                "Tamaño (KB)": f"{len(f.getvalue()) / 1024:.1f} KB",
+                "Estado en Tanda": "Incluido en la tanda (1-15)",
+            }
+            for idx, f in enumerate(archivos_activos)
+        ])
+        st.dataframe(df_files, use_container_width=True, hide_index=True, height=min(280, 45 + 35 * len(archivos_activos)))
+
+        if archivos_omitidos:
+            with st.expander(f"Ver {len(archivos_omitidos)} archivo(s) omitido(s) por el límite de {MAX_PDFS_POR_TANDA_DEMO} PDFs"):
+                for f_om in archivos_omitidos:
+                    st.caption(f"• {f_om.name} ({len(f_om.getvalue()) / 1024:.1f} KB)")
+
+        col_btn_clear, col_btn_scan = st.columns([1, 2])
+        with col_btn_clear:
+            if st.button("🗑️ Vaciar lista de PDFs", use_container_width=True):
+                st.session_state["uploader_key"] += 1
+                st.rerun()
+
+        with col_btn_scan:
+            boton_deshabilitado = not cuit_valido
+            if st.button(
+                f"🔍 Escanear y Validar {len(archivos_activos)} Factura(s) Digital(es) →",
+                type="primary",
+                use_container_width=True,
+                disabled=boton_deshabilitado,
+            ):
+                barra = st.progress(0, text="Iniciando lectura multicapa de códigos QR AFIP/ARCA...")
+                lote_tuplas = [(f.name, f.getvalue()) for f in archivos_activos]
+
+                def _actualizar_progreso(actual: int, total: int, nombre: str) -> None:
+                    porc = int((actual / max(total, 1)) * 100)
+                    barra.progress(porc, text=f"Escaneando ({actual}/{total}): {nombre}...")
+
+                resultado_lote = escanear_lote_pdfs(
+                    archivos_pdf=lote_tuplas,
+                    cuit_institucional=cuit_limpio if cuit_valido else "",
+                    progreso_callback=_actualizar_progreso,
+                )
+                barra.empty()
+
+                st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
+                st.session_state["facturas_procesadas"] = resultado_lote["procesadas"]
+                st.session_state["facturas_rechazadas"] = resultado_lote["rechazadas"]
+                st.session_state["zip_sssalud_bytes"] = generar_zip_sssalud_adaptado(
+                    resultado_lote["procesadas"],
+                    resultado_lote["rechazadas"],
+                )
+                st.session_state["lote_confirmado"] = False
+                st.session_state["paso_actual"] = "informe"
+                st.rerun()
+    else:
         st.markdown(
             f"""
-            <div class="sapi-card-centered">
-                <p class="sapi-card-title" style="text-align: center;">📂 Selección de Facturas Digitales en PDF</p>
-                <p class="sapi-card-sub" style="text-align: center; margin-bottom: 0;">
-                    Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.<br>
-                    <b>Límite de versión Demo: hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF por tanda</b> (máx. 15 MB por archivo).
-                </p>
+            <div style="width: 100%; box-sizing: border-box; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.9rem 1rem; border-radius: 12px; font-size: 0.9rem; margin-top: 0.5rem;">
+                👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-        uploaded_files = st.file_uploader(
-            f"Seleccione hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF",
-            type=["pdf"],
-            accept_multiple_files=True,
-            key=f"pdf_uploader_{st.session_state['uploader_key']}",
-        )
-
-        if uploaded_files:
-            total_subidos = len(uploaded_files)
-            excede_limite = total_subidos > MAX_PDFS_POR_TANDA_DEMO
-
-            if excede_limite:
-                st.warning(
-                    f"⚠️ **Límite de Versión Demo ({MAX_PDFS_POR_TANDA_DEMO} PDFs por tanda):** "
-                    f"Ha seleccionado **{total_subidos} archivos**. Se procesarán únicamente los **primeros {MAX_PDFS_POR_TANDA_DEMO} PDFs** "
-                    f"y se omitirán los {total_subidos - MAX_PDFS_POR_TANDA_DEMO} restantes."
-                )
-
-            archivos_activos = uploaded_files[:MAX_PDFS_POR_TANDA_DEMO]
-            archivos_omitidos = uploaded_files[MAX_PDFS_POR_TANDA_DEMO:]
-
-            # Tabla resumen de archivos seleccionados
-            df_files = pd.DataFrame([
-                {
-                    "#": idx + 1,
-                    "Archivo PDF": f.name,
-                    "Tamaño (KB)": f"{len(f.getvalue()) / 1024:.1f} KB",
-                    "Estado en Tanda": "Incluido en la tanda (1-15)",
-                }
-                for idx, f in enumerate(archivos_activos)
-            ])
-            st.dataframe(df_files, use_container_width=True, hide_index=True, height=min(280, 45 + 35 * len(archivos_activos)))
-
-            if archivos_omitidos:
-                with st.expander(f"Ver {len(archivos_omitidos)} archivo(s) omitido(s) por el límite de {MAX_PDFS_POR_TANDA_DEMO} PDFs"):
-                    for f_om in archivos_omitidos:
-                        st.caption(f"• {f_om.name} ({len(f_om.getvalue()) / 1024:.1f} KB)")
-
-            col_btn_clear, col_btn_scan = st.columns([1, 2])
-            with col_btn_clear:
-                if st.button("🗑️ Vaciar lista de PDFs", use_container_width=True):
-                    st.session_state["uploader_key"] += 1
-                    st.rerun()
-
-            with col_btn_scan:
-                boton_deshabilitado = not cuit_valido
-                if st.button(
-                    f"🔍 Escanear y Validar {len(archivos_activos)} Factura(s) Digital(es) →",
-                    type="primary",
-                    use_container_width=True,
-                    disabled=boton_deshabilitado,
-                ):
-                    barra = st.progress(0, text="Iniciando lectura multicapa de códigos QR AFIP/ARCA...")
-                    lote_tuplas = [(f.name, f.getvalue()) for f in archivos_activos]
-
-                    def _actualizar_progreso(actual: int, total: int, nombre: str) -> None:
-                        porc = int((actual / max(total, 1)) * 100)
-                        barra.progress(porc, text=f"Escaneando ({actual}/{total}): {nombre}...")
-
-                    resultado_lote = escanear_lote_pdfs(
-                        archivos_pdf=lote_tuplas,
-                        cuit_institucional=cuit_limpio if cuit_valido else "",
-                        progreso_callback=_actualizar_progreso,
-                    )
-                    barra.empty()
-
-                    st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
-                    st.session_state["facturas_procesadas"] = resultado_lote["procesadas"]
-                    st.session_state["facturas_rechazadas"] = resultado_lote["rechazadas"]
-                    st.session_state["zip_sssalud_bytes"] = generar_zip_sssalud_adaptado(
-                        resultado_lote["procesadas"],
-                        resultado_lote["rechazadas"],
-                    )
-                    st.session_state["lote_confirmado"] = False
-                    st.session_state["paso_actual"] = "informe"
-                    st.rerun()
-        else:
-            st.markdown(
-                f"""
-                <div style="text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 0.5rem;">
-                    👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
 
 
 # ==============================================================================
