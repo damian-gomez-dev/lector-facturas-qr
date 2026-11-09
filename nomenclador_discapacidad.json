@@ -1,0 +1,590 @@
+[
+  {
+    "codigo": "1",
+    "descripcion": "Centro de Día - Jornada Doble - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "2",
+    "descripcion": "Centro de Día - Jornada Doble - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "3",
+    "descripcion": "Centro de Día - Jornada Doble - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "4",
+    "descripcion": "Centro de Día - Jornada Simple - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "5",
+    "descripcion": "Centro de Día - Jornada Simple - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "6",
+    "descripcion": "Centro de Día - Jornada Simple - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "7",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Doble - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "8",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Doble - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "9",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Doble - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "10",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Simple - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "11",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Simple - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "12",
+    "descripcion": "Centro Educativo Terapeutico - Jornada Simple - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "13",
+    "descripcion": "Formación Laboral -Jornada Doble - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "14",
+    "descripcion": "Formación Laboral -Jornada Doble - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "15",
+    "descripcion": "Formación Laboral -Jornada Doble - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "16",
+    "descripcion": "Formación Laboral - Jornada Simple - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "17",
+    "descripcion": "Formación Laboral - Jornada Simple - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "18",
+    "descripcion": "Formación Laboral - Jornada Simple - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "19",
+    "descripcion": "Aprestamiento Laboral - Jornada Doble - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "20",
+    "descripcion": "Aprestamiento Laboral - Jornada Doble - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "21",
+    "descripcion": "Aprestamiento Laboral - Jornada Doble - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "22",
+    "descripcion": "Aprestamiento Laboral - Jornada Simple - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "23",
+    "descripcion": "Aprestamiento Laboral - Jornada Simple - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "24",
+    "descripcion": "Aprestamiento Laboral - Jornada Simple - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "25",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Doble - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "26",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Doble - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "27",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Doble - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "28",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Simple - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "29",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Simple - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "30",
+    "descripcion": "Escolaridad Pre Primaria - Jornada Simple - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "31",
+    "descripcion": "Escolaridad Primaria - Jornada Doble - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "32",
+    "descripcion": "Escolaridad Primaria - Jornada Doble - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "33",
+    "descripcion": "Escolaridad Primaria - Jornada Doble - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "34",
+    "descripcion": "Escolaridad Primaria - Jornada Simple - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "35",
+    "descripcion": "Escolaridad Primaria - Jornada Simple - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "36",
+    "descripcion": "Escolaridad Primaria - Jornada Simple - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "37",
+    "descripcion": "Hogar Permanente - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "38",
+    "descripcion": "Hogar Permanente - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "39",
+    "descripcion": "Hogar Permanente - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "40",
+    "descripcion": "Hogar Lunes a Viernes - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "41",
+    "descripcion": "Hogar Lunes a Viernes - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "42",
+    "descripcion": "Hogar Lunes a Viernes - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "43",
+    "descripcion": "Hogar con CD Lunes a Viernes - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "44",
+    "descripcion": "Hogar con CD Lunes a Viernes - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "45",
+    "descripcion": "Hogar con CD Lunes a Viernes - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "46",
+    "descripcion": "Hogar con CET Lunes a Viernes - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "47",
+    "descripcion": "Hogar con CET Lunes a Viernes - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "48",
+    "descripcion": "Hogar con CET Lunes a Viernes - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "49",
+    "descripcion": "Hogar Lunes a Viernes con Formación Laboral - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "50",
+    "descripcion": "Hogar Lunes a Viernes con Formación Laboral - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "51",
+    "descripcion": "Hogar Lunes a Viernes con Formación Laboral - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "52",
+    "descripcion": "Hogar Lunes a Viernes con Pre Primaria - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "53",
+    "descripcion": "Hogar Lunes a Viernes con Pre Primaria - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "54",
+    "descripcion": "Hogar Lunes a Viernes con Pre Primaria - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "55",
+    "descripcion": "Hogar Lunes a Viernes con Primaria - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "56",
+    "descripcion": "Hogar Lunes a Viernes con Primaria - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "57",
+    "descripcion": "Hogar Lunes a Viernes con Primaria - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "58",
+    "descripcion": "Hogar con CD Permanente - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "59",
+    "descripcion": "Hogar con CD Permanente - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "60",
+    "descripcion": "Hogar con CD Permanente - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "61",
+    "descripcion": "Hogar con CET Permanente - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "62",
+    "descripcion": "Hogar con CET Permanente - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "63",
+    "descripcion": "Hogar con CET Permanente - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "64",
+    "descripcion": "Hogar Permanente con Formación Laboral - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "65",
+    "descripcion": "Hogar Permanente con Formación Laboral - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "66",
+    "descripcion": "Hogar Permanente con Formación Laboral - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "67",
+    "descripcion": "Hogar Permanente con Pre Primaria - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "68",
+    "descripcion": "Hogar Permanente con Pre Primaria - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "69",
+    "descripcion": "Hogar Permanente con Pre Primaria - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "70",
+    "descripcion": "Hogar Permanente con Primaria - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "71",
+    "descripcion": "Hogar Permanente con Primaria - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "72",
+    "descripcion": "Hogar Permanente con Primaria - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "73",
+    "descripcion": "Pequeño Hogar Lunes a Viernes - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "74",
+    "descripcion": "Pequeño Hogar Lunes a Viernes - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "75",
+    "descripcion": "Pequeño Hogar Lunes a Viernes - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "76",
+    "descripcion": "Pequeño Hogar Permanente - Cat A",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "77",
+    "descripcion": "Pequeño Hogar Permanente - Cat B",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "78",
+    "descripcion": "Pequeño Hogar Permanente - Cat C",
+    "admite_dependencia": 1,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "79",
+    "descripcion": "Residencia Lunes a Viernes - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "80",
+    "descripcion": "Residencia Lunes a Viernes - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "81",
+    "descripcion": "Residencia Lunes a Viernes - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "82",
+    "descripcion": "Residencia Permanente - Cat A",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "83",
+    "descripcion": "Residencia Permanente - Cat B",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "84",
+    "descripcion": "Residencia Permanente - Cat C",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "85",
+    "descripcion": "Estimulacion Temprana",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "86",
+    "descripcion": "Prestacion de Apoyo",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "87",
+    "descripcion": "Modulo Maestro de Apoyo",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "89",
+    "descripcion": "Modulo de Apoyo a la Integracion Escolar (SAIE)",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "90",
+    "descripcion": "Rehabilitacion - Modulo Integral Intensivo",
+    "admite_dependencia": 0,
+    "cantidad": "4"
+  },
+  {
+    "codigo": "91",
+    "descripcion": "Rehabilitacion - Modulo Integral Simple",
+    "admite_dependencia": 0,
+    "cantidad": "4"
+  },
+  {
+    "codigo": "92",
+    "descripcion": "Rehabilitación - Hosp. De Día - Jornada Simple",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "93",
+    "descripcion": "Rehabilitación - Hosp. De Día - Jornada Doble",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "94",
+    "descripcion": "Rehabilitación - Internación",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "95",
+    "descripcion": "Alimentación (diaria)",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "96",
+    "descripcion": "Transporte - (Km)",
+    "admite_dependencia": 1,
+    "cantidad": "-"
+  },
+  {
+    "codigo": "97",
+    "descripcion": "Escuela comun",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "98",
+    "descripcion": "Escuela especial pre primaria",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  },
+  {
+    "codigo": "99",
+    "descripcion": "Escuela especial primaria",
+    "admite_dependencia": 0,
+    "cantidad": "1"
+  }
+]
