@@ -14,11 +14,9 @@ from sapi_facturas_core import (
     generar_excel_revision,
     generar_txt_sssalud,
     generar_zip_sssalud_adaptado,
-    obtener_cronograma_presentacion,
     obtener_opciones_selector_prestacion,
     recalcular_estados_lote,
     renderizar_preview_pdf_png,
-    resolver_codificacion_prestacion,
     validar_formato_cuit_opcional,
 )
 
@@ -262,6 +260,24 @@ st.markdown(
         border: 1px solid #bfdbfe;
         font-family: monospace;
     }
+
+    /* Centrado de menú de carga de PDFs */
+    .sapi-card-centered {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.25rem 1.4rem;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        margin-bottom: 0.85rem;
+        text-align: center;
+    }
+    [data-testid="stFileUploader"] label {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+        text-align: center !important;
+        font-weight: 600 !important;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -309,7 +325,7 @@ def formatear_moneda_ars(valor: float) -> str:
 
 
 # ==============================================================================
-# CABECERA PRINCIPAL Y STEPPER DE 3 PASOS
+# CABECERA PRINCIPAL, CUIT INSTITUCIONAL Y STEPPER DE 3 PASOS
 # ==============================================================================
 def render_cabecera_y_stepper() -> None:
     st.markdown(
@@ -330,6 +346,24 @@ def render_cabecera_y_stepper() -> None:
     )
 
     paso = st.session_state["paso_actual"]
+
+    # Campo de CUIT ubicado entre el título principal y los 3 cuadros de pasos
+    _, col_cuit_center, _ = st.columns([1.1, 1.8, 1.1])
+    with col_cuit_center:
+        cuit_raw = st.text_input(
+            "🏛️ CUIT Institucional (Opcional)",
+            value=st.session_state["cuit_institucional_input"],
+            placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
+            disabled=(paso != "seleccion"),
+        )
+        st.session_state["cuit_institucional_input"] = cuit_raw
+        cuit_valido, _, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
+        if cuit_raw.strip():
+            if cuit_valido:
+                st.success(f"✅ {msg_cuit}")
+            else:
+                st.error(f"⚠️ {msg_cuit}")
+
     clase_1 = "active" if paso == "seleccion" else "done"
     clase_2 = "active" if paso == "informe" else ("done" if paso == "revision" else "")
     clase_3 = "active" if paso == "revision" else ""
@@ -345,7 +379,7 @@ def render_cabecera_y_stepper() -> None:
                 <div class="sapi-step-num">{icono_1}</div>
                 <div>
                     <p class="sapi-step-label">1. Selección de PDFs</p>
-                    <p class="sapi-step-desc">CUIT institucional opcional y carga de hasta {MAX_PDFS_POR_TANDA_DEMO} facturas PDF</p>
+                    <p class="sapi-step-desc">Carga de hasta {MAX_PDFS_POR_TANDA_DEMO} facturas PDF por tanda</p>
                 </div>
             </div>
             <div class="sapi-step {clase_2}">
@@ -369,65 +403,21 @@ def render_cabecera_y_stepper() -> None:
 
 
 # ==============================================================================
-# PASO 1: SELECCIÓN DE PDFs Y CUIT INSTITUCIONAL OPCIONAL
+# PASO 1: SELECCIÓN DE PDFs (CENTRADO)
 # ==============================================================================
 def render_paso_1_seleccion() -> None:
-    col_cfg, col_up = st.columns([1.05, 1.45], gap="large")
+    cuit_raw = st.session_state.get("cuit_institucional_input", "")
+    cuit_valido, cuit_limpio, _ = validar_formato_cuit_opcional(cuit_raw)
 
-    with col_cfg:
-        st.markdown(
-            """
-            <div class="sapi-card">
-                <p class="sapi-card-title">🏛️ Verificación de CUIT Institucional (Opcional)</p>
-                <p class="sapi-card-sub">
-                    Si ingresa el CUIT de su institución, el sistema verificará que el <b>CUIT Receptor</b> de cada factura
-                    (extraído del QR AFIP o del texto del PDF) coincida con su entidad. Si lo deja vacío, se aceptarán facturas de cualquier receptor.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        cuit_raw = st.text_input(
-            "CUIT de la Institución (Opcional · 11 dígitos)",
-            value=st.session_state["cuit_institucional_input"],
-            placeholder="Ej: 30-12345678-9 o 30123456789 (dejar vacío para omitir control)",
-            help="Opcional. Ingrese los 11 dígitos del CUIT institucional para rechazar automáticamente facturas emitidas a otra entidad.",
-        )
-        st.session_state["cuit_institucional_input"] = cuit_raw
-
-        cuit_valido, cuit_limpio, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
-        if not cuit_raw.strip():
-            st.info(f"ℹ️ {msg_cuit}")
-        elif cuit_valido:
-            st.success(f"✅ {msg_cuit}")
-        else:
-            st.error(f"⚠️ {msg_cuit}")
-
-        cronograma = obtener_cronograma_presentacion()
-        etiquetas_cron = " · ".join(
-            f"**{p['etiqueta']}** (`{p['periodo']}`)" for p in cronograma["periodos_detalle"]
-        )
-        st.markdown(
-            f"""
-            <div class="sapi-card" style="margin-top: 0.75rem; background: #f8fafc;">
-                <p class="sapi-card-title" style="font-size: 0.92rem;">📅 Referencia Cronograma SSSalud ({cronograma['mes_calendario_actual']})</p>
-                <p style="font-size: 0.82rem; color: #475569; margin: 0.25rem 0 0 0;">
-                    Trimestre de presentación vigente: {etiquetas_cron}.<br>
-                    <span style="color: #64748b;">En esta versión demo no se cruza contra listado de autorizaciones previas.</span>
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    _, col_up, _ = st.columns([0.55, 2.4, 0.55])
 
     with col_up:
         st.markdown(
             f"""
-            <div class="sapi-card">
-                <p class="sapi-card-title">📂 Selección de Facturas Digitales en PDF</p>
-                <p class="sapi-card-sub">
-                    Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.
+            <div class="sapi-card-centered">
+                <p class="sapi-card-title" style="text-align: center;">📂 Selección de Facturas Digitales en PDF</p>
+                <p class="sapi-card-sub" style="text-align: center; margin-bottom: 0;">
+                    Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.<br>
                     <b>Límite de versión Demo: hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF por tanda</b> (máx. 15 MB por archivo).
                 </p>
             </div>
@@ -512,8 +502,13 @@ def render_paso_1_seleccion() -> None:
                     st.session_state["paso_actual"] = "informe"
                     st.rerun()
         else:
-            st.info(
-                f"👆 Arrastre o seleccione entre **1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF** para iniciar el escaneo QR y validación."
+            st.markdown(
+                f"""
+                <div style="text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 0.5rem;">
+                    👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
 
@@ -548,7 +543,7 @@ def render_paso_2_informe() -> None:
                         ❌ Facturas No Procesadas / Rechazadas
                     </p>
                     <p style="margin:0.2rem 0 0 0; font-size:0.82rem; color:#b91c1c;">
-                        {"Filtro CUIT Institucional: " + formatear_cuit_guiones(cuit_inst) if cuit_inst else "Sin filtro de CUIT institucional (opcional)"}
+                        {"CUIT Institucional verificado: " + formatear_cuit_guiones(cuit_inst) if cuit_inst else "Comprobantes sin QR válido o Notas de Crédito"}
                     </p>
                 </div>
                 <div class="kpi-num-err">{len(rechazadas)}</div>
