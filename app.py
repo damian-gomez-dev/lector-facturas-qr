@@ -24,7 +24,7 @@ from sapi_facturas_core import (
 # ==============================================================================
 st.set_page_config(
     page_title="SAPI Web · Carga Masiva de Facturas Digitales (QR)",
-    page_icon="🧾",
+    page_icon=":material/receipt_long:",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -88,7 +88,9 @@ st.markdown(
         font-weight: 700;
         letter-spacing: 0.03em;
         backdrop-filter: blur(6px);
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
     }
 
     /* Stepper de 3 pasos (100% ancho y tarjetas de igual alto y simetría) */
@@ -320,8 +322,15 @@ st.markdown(
         display: none !important;
     }
     [data-testid="stFileUploaderDropzoneInstructions"]::before {
-        content: "📂 Selección de Facturas Digitales en PDF";
-        display: block;
+        content: "Selección de Facturas Digitales en PDF";
+        display: inline-block;
+        width: fit-content;
+        margin: 0 auto;
+        padding-left: 26px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23D97706' d='M3 6a2 2 0 0 1 2-2h4.6l2 2H19a2 2 0 0 1 2 2v1H3V6z'/%3E%3Cpath fill='%23F59E0B' d='M3 8h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left center;
+        background-size: 19px 19px;
         font-size: 1.05rem;
         font-weight: 700;
         color: #0f172a;
@@ -385,9 +394,11 @@ st.markdown(
         box-sizing: border-box;
     }
     .sapi-scan-icon {
-        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         line-height: 1;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.65rem;
     }
     .sapi-scan-title {
         font-size: 1.05rem;
@@ -455,6 +466,9 @@ st.markdown(
         font-weight: 600;
         color: #475569;
         margin: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
     }
     .rev-kpi-val {
         font-size: 1.4rem;
@@ -506,6 +520,24 @@ st.markdown(
     .st-key-btn_excel_icon button > div,
     .st-key-btn_info_icon button > div {
         display: none !important;
+    }
+    .st-key-btn_vaciar_pdfs [data-testid="stIconMaterial"] {
+        color: #64748b !important;
+    }
+    .st-key-btn_vaciar_pdfs button:hover [data-testid="stIconMaterial"] {
+        color: #dc2626 !important;
+    }
+    .st-key-btn_zip_paso2 [data-testid="stIconMaterial"] {
+        color: #d97706 !important;
+    }
+    .st-key-btn_sel_all_paso3 [data-testid="stIconMaterial"] {
+        color: #2563eb !important;
+    }
+    .st-key-btn_desel_all_paso3 [data-testid="stIconMaterial"] {
+        color: #64748b !important;
+    }
+    [data-testid="stTextInput"] [data-testid="stIconMaterial"] {
+        color: #475569 !important;
     }
 </style>
 """.replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
@@ -563,6 +595,47 @@ def formatear_moneda_ars(valor: float) -> str:
     return f"$ {entero_ar},{dec}"
 
 
+_SVG_PATHS: Dict[str, str] = {
+    "receipt": (
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+        'd="M6 2h9l4 4v16l-2.5-1.5L14 22l-2-1.5L10 22l-2.5-1.5L5 22V4a2 2 0 0 1 1-2z"/>'
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 10h6M9 14h6"/>'
+    ),
+    "bolt": '<path fill="currentColor" d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/>',
+    "upload": (
+        '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+        'd="M12 16V4m0 0l-4 4m4-4l4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>'
+    ),
+    "search": (
+        '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/>'
+        '<path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M20 20l-3.8-3.8"/>'
+    ),
+    "clipboard": (
+        '<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>'
+        '<rect x="9" y="2" width="6" height="4" rx="1" fill="#ffffff" stroke="currentColor" stroke-width="2"/>'
+        '<path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 11h6M9 15h4"/>'
+    ),
+    "check_circle": (
+        '<circle cx="12" cy="12" r="9.5" fill="currentColor"/>'
+        '<path fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8 12.5l2.8 2.8 5.4-5.8"/>'
+    ),
+    "alert_triangle": (
+        '<path fill="currentColor" d="M12 2.5L1.8 20.5a1 1 0 0 0 .87 1.5h18.66a1 1 0 0 0 .87-1.5L12 2.5z"/>'
+        '<path stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" d="M12 9v5.2"/>'
+        '<circle cx="12" cy="17.6" r="1.2" fill="#ffffff"/>'
+    ),
+}
+
+
+def _svg_inline(nombre: str, color: str, size: int = 16) -> str:
+    """Devuelve un icono SVG genérico plano en el color indicado."""
+    cuerpo = _SVG_PATHS.get(nombre, "")
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" '
+        f'style="color: {color}; flex-shrink: 0; vertical-align: middle;">{cuerpo}</svg>'
+    )
+
+
 # ==============================================================================
 # CABECERA PRINCIPAL, CUIT INSTITUCIONAL Y STEPPER DE 3 PASOS
 # ==============================================================================
@@ -571,13 +644,17 @@ def render_cabecera_y_stepper() -> None:
         f"""
         <div class="sapi-header">
             <div>
-                <h1 class="sapi-header-title">🧾 Carga Masiva de Facturas Digitales (QR AFIP/ARCA)</h1>
+                <h1 class="sapi-header-title">
+                    {_svg_inline("receipt", "#93c5fd", 26)}
+                    <span>Carga Masiva de Facturas Digitales (QR AFIP/ARCA)</span>
+                </h1>
                 <p class="sapi-header-sub">
                     Módulo Contable SAPI Web · Decodificación fiscal QR, adaptación SSSalud (1 página) y codificación Nomenclador de Discapacidad
                 </p>
             </div>
             <div class="sapi-badge-demo">
-                ⚡ VERSIÓN DEMO · MÁX. {MAX_PDFS_POR_TANDA_DEMO} PDFs POR TANDA
+                {_svg_inline("bolt", "#fde047", 14)}
+                <span>VERSIÓN DEMO · MÁX. {MAX_PDFS_POR_TANDA_DEMO} PDFs POR TANDA</span>
             </div>
         </div>
         """,
@@ -590,16 +667,18 @@ def render_cabecera_y_stepper() -> None:
     col_cuit, col_rnos = st.columns(2, gap="medium")
     with col_cuit:
         cuit_raw = st.text_input(
-            "🏛️ CUIT Institucional (Opcional)",
+            "CUIT Institucional (Opcional)",
             value=st.session_state["cuit_institucional_input"],
             placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
+            icon=":material/account_balance:",
             disabled=(paso != "seleccion"),
         )
     with col_rnos:
         rnos_raw = st.text_input(
-            "🏥 RNOS de la Institución",
+            "RNOS de la Institución",
             value=st.session_state["rnos_institucional_input"],
             placeholder="Ej: 107909 (6 dígitos para generar RNOS_ds.txt)",
+            icon=":material/local_hospital:",
             max_chars=10,
             disabled=(paso != "seleccion"),
         )
@@ -611,9 +690,9 @@ def render_cabecera_y_stepper() -> None:
         st.session_state["ultimo_cuit_notificado"] = cuit_limpio_input
         if cuit_limpio_input:
             if cuit_valido:
-                st.toast(msg_cuit, icon="✅")
+                st.toast(f":green[:material/check_circle:] {msg_cuit}")
             else:
-                st.toast(msg_cuit, icon="⚠️", duration="long")
+                st.toast(f":orange[:material/warning:] {msg_cuit}", duration="long")
 
     st.session_state["rnos_institucional_input"] = rnos_raw
     rnos_limpio_input = rnos_raw.strip()
@@ -623,9 +702,9 @@ def render_cabecera_y_stepper() -> None:
         st.session_state["ultimo_rnos_notificado"] = rnos_limpio_input
         if rnos_limpio_input:
             if rnos_valido:
-                st.toast(msg_rnos, icon="✅")
+                st.toast(f":green[:material/check_circle:] {msg_rnos}")
             else:
-                st.toast(msg_rnos, icon="⚠️", duration="long")
+                st.toast(f":orange[:material/warning:] {msg_rnos}", duration="long")
 
     clase_1 = "active" if paso == "seleccion" else "done"
     clase_2 = "active" if paso == "informe" else ("done" if paso == "revision" else "")
@@ -676,7 +755,7 @@ def render_paso_1_seleccion() -> None:
 
     toast_limite = st.session_state.pop("toast_limite_pendiente", None)
     if toast_limite:
-        st.toast(toast_limite, icon="⚠️", duration="long")
+        st.toast(f":orange[:material/warning:] {toast_limite}", duration="long")
 
     modal_progreso = st.empty()
     archivos_guardados: List[tuple[str, bytes]] = st.session_state.get("archivos_seleccionados", [])
@@ -705,8 +784,9 @@ def render_paso_1_seleccion() -> None:
         else:
             st.markdown(
                 f"""
-                <div style="width: 100%; box-sizing: border-box; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.9rem 1rem; border-radius: 12px; font-size: 0.9rem; margin-top: 0.5rem;">
-                    👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
+                <div style="width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.9rem 1rem; border-radius: 12px; font-size: 0.9rem; margin-top: 0.5rem;">
+                    {_svg_inline("upload", "#1d4ed8", 17)}
+                    <span>Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -726,7 +806,7 @@ def render_paso_1_seleccion() -> None:
 
         col_btn_clear, col_btn_scan = st.columns([1, 2])
         with col_btn_clear:
-            if st.button("🗑️ Vaciar lista de PDFs", use_container_width=True):
+            if st.button("Vaciar lista de PDFs", key="btn_vaciar_pdfs", icon=":material/delete_outline:", use_container_width=True):
                 st.session_state["archivos_seleccionados"] = []
                 st.session_state["toast_limite_pendiente"] = None
                 st.session_state["uploader_key"] += 1
@@ -741,7 +821,9 @@ def render_paso_1_seleccion() -> None:
                 motivos_deshabilitado.append(msg_rnos)
 
             if st.button(
-                f"🔍 Escanear y Validar {len(archivos_guardados)} Factura(s) Digital(es) →",
+                f"Escanear y Validar {len(archivos_guardados)} Factura(s) Digital(es) →",
+                key="btn_escanear_pdfs",
+                icon=":material/search:",
                 type="primary",
                 use_container_width=True,
                 disabled=boton_deshabilitado,
@@ -752,7 +834,7 @@ def render_paso_1_seleccion() -> None:
                         f"""
 <div class="sapi-scan-overlay">
     <div class="sapi-scan-modal">
-        <div class="sapi-scan-icon">🔍</div>
+        <div class="sapi-scan-icon">{_svg_inline("search", "#2563eb", 34)}</div>
         <p class="sapi-scan-title">Escaneando Facturas Digitales (QR)</p>
         <p class="sapi-scan-sub">{html.escape(texto)}</p>
         <div class="sapi-progress-track">
@@ -809,19 +891,18 @@ def render_paso_2_informe() -> None:
 
     if st.session_state.pop("toast_informe_pendiente", False):
         st.toast(
-            f"Facturas Procesadas con Éxito: {len(procesadas)} · QR AFIP/ARCA decodificado",
-            icon="✅",
+            f":green[:material/check_circle:] Facturas Procesadas con Éxito: {len(procesadas)} · QR AFIP/ARCA decodificado",
             duration="long",
         )
         msg_rech = f"Facturas No Procesadas / Rechazadas: {len(rechazadas)}"
         if cuit_inst:
             msg_rech += f" · CUIT {formatear_cuit_guiones(cuit_inst)}"
-        st.toast(msg_rech, icon="❌", duration="long")
+        st.toast(f":red[:material/cancel:] {msg_rech}", duration="long")
 
     etiquetas_err = {
-        "nota_credito": "🚫 Nota de Crédito",
-        "cuit_invalido": "🏛️ Entidad No Coincide",
-        "sin_qr": "🔍 Sin QR / Ilegible",
+        "nota_credito": "Nota de Crédito",
+        "cuit_invalido": "Entidad No Coincide",
+        "sin_qr": "Sin QR / Ilegible",
     }
 
     registros_unificados: List[tuple[int, Dict[str, Any]]] = []
@@ -878,10 +959,12 @@ def render_paso_2_informe() -> None:
 
     with col_zip:
         st.download_button(
-            label="📦 Descargar ZIP SSSalud (1 pág.)",
+            label="Descargar ZIP SSSalud (1 pág.)",
             data=zip_bytes,
             file_name=f"Facturas_SSSalud_Adaptadas_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
             mime="application/zip",
+            key="btn_zip_paso2",
+            icon=":material/folder_zip:",
             use_container_width=True,
             type="secondary",
             help=(
@@ -910,7 +993,7 @@ def render_paso_3_revision() -> None:
 
     toast_confirmacion = st.session_state.pop("toast_confirmacion_pendiente", None)
     if toast_confirmacion:
-        st.toast(toast_confirmacion, icon="🎉", duration="long")
+        st.toast(f":green[:material/task_alt:] {toast_confirmacion}", duration="long")
 
     if not procesadas:
         st.warning("No hay facturas procesadas para revisar.")
@@ -956,7 +1039,7 @@ def render_paso_3_revision() -> None:
             return str(fila.get("motivo_estado") or "Error")
         advs = fila.get("advertencias") or []
         if advs:
-            return "⚠️ " + " | ".join(str(a) for a in advs)
+            return "Atención: " + " | ".join(str(a) for a in advs)
         return "Listo para autorizar"
 
     filas_editor = []
@@ -1164,19 +1247,20 @@ def render_paso_3_revision() -> None:
     seleccionadas_post = [f for f in procesadas if f.get("seleccionada") and f.get("estado") == "Listo"]
 
     color_err = "#dc2626" if len(con_error_post) > 0 else "#64748b"
+    color_warn_icon = "#dc2626" if len(con_error_post) > 0 else "#d97706"
     metrics_ph.markdown(
         f"""
         <div class="rev-kpi-bar">
             <div class="rev-kpi-item">
-                <p class="rev-kpi-label">📋 Total en Revisión</p>
+                <p class="rev-kpi-label">{_svg_inline("clipboard", "#475569", 16)}<span>Total en Revisión</span></p>
                 <p class="rev-kpi-val" style="color: #0f172a;">{len(procesadas)}</p>
             </div>
             <div class="rev-kpi-item">
-                <p class="rev-kpi-label" style="color: #166534;">✅ Listas (Válidas)</p>
+                <p class="rev-kpi-label" style="color: #166534;">{_svg_inline("check_circle", "#16a34a", 16)}<span>Listas (Válidas)</span></p>
                 <p class="rev-kpi-val" style="color: #15803d;">{len(listas_post)}</p>
             </div>
             <div class="rev-kpi-item">
-                <p class="rev-kpi-label" style="color: {color_err};">⚠️ Con Observaciones</p>
+                <p class="rev-kpi-label" style="color: {color_err};">{_svg_inline("alert_triangle", color_warn_icon, 16)}<span>Con Observaciones</span></p>
                 <p class="rev-kpi-val" style="color: {color_err};">{len(con_error_post)}</p>
             </div>
         </div>
@@ -1186,12 +1270,12 @@ def render_paso_3_revision() -> None:
 
     excel_bytes = generar_excel_revision(procesadas, rechazadas, cuit_inst)
     with toolbar_ph.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center", gap="small"):
-        if st.button("☑️ Seleccionar todas", key="btn_sel_all_paso3"):
+        if st.button("Seleccionar todas", key="btn_sel_all_paso3", icon=":material/check_box:"):
             for f in procesadas:
                 f["seleccionada"] = (f.get("estado") == "Listo")
             st.session_state["revision_editor_version"] += 1
             st.rerun()
-        if st.button("⬜ Desmarcar todas", key="btn_desel_all_paso3"):
+        if st.button("Desmarcar todas", key="btn_desel_all_paso3", icon=":material/check_box_outline_blank:"):
             for f in procesadas:
                 f["seleccionada"] = False
             st.session_state["revision_editor_version"] += 1
@@ -1245,11 +1329,12 @@ def render_paso_3_revision() -> None:
             st.session_state["toast_confirmacion_pendiente"] = msg
 
         st.download_button(
-            label=f"✅ Confirmar y Registrar {len(seleccionadas_post)} Factura(s)",
+            label=f"Confirmar y Registrar {len(seleccionadas_post)} Factura(s)",
             data=txt_bytes,
             file_name=f"{rnos_para_txt}_ds.txt",
             mime="text/plain",
             type="primary",
+            icon=":material/check_circle:",
             use_container_width=True,
             disabled=(len(seleccionadas_post) == 0),
             on_click=_guardar_toast_confirmacion,
