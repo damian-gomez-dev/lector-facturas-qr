@@ -1538,6 +1538,32 @@ def validar_formato_cuit_opcional(cuit_input: Optional[str]) -> Tuple[bool, str,
     )
 
 
+def validar_rnos_sssalud(rnos_input: Optional[str]) -> Tuple[bool, str, str]:
+    """
+    Valida el código RNOS (Registro Nacional de Obras Sociales, hasta 6 dígitos).
+    Retorna: (es_valido, rnos_6_digitos, mensaje_estado)
+    """
+    limpio = re.sub(r"\D", "", str(rnos_input or ""))
+    if not limpio:
+        return (
+            False,
+            "",
+            "Debe ingresar el RNOS de la institución (hasta 6 dígitos, ej: 107909).",
+        )
+    if len(limpio) > 6:
+        return (
+            False,
+            limpio,
+            f"El RNOS ingresado tiene {len(limpio)} dígitos. Debe tener como máximo 6 dígitos numéricos (ej: 107909).",
+        )
+    rnos_6 = limpio.zfill(6)
+    return (
+        True,
+        rnos_6,
+        f"RNOS configurado: {rnos_6} (archivo {rnos_6}_ds.txt).",
+    )
+
+
 def validar_cuit_receptor_institucion(
     datos_qr: Dict[str, Any],
     cuit_institucion_esperado: Optional[str],
@@ -2099,43 +2125,87 @@ def generar_excel_revision(
     return buffer.getvalue()
 
 
-def generar_txt_sssalud(filas: List[Dict[str, Any]]) -> bytes:
+def generar_txt_sssalud(
+    filas: List[Dict[str, Any]],
+    rnos: Optional[str] = None,
+) -> bytes:
     """
-    Exporta las facturas seleccionadas y listas (con recupero) al formato TXT oficial de SSSalud
-    (replicando `exportar_facturas_txt` de `backend/app/services/factura_service.py`).
+    Exporta las facturas seleccionadas y listas (con recupero) al formato TXT oficial
+    Anexo I Diseño de Registro de la SSSalud (`<RNOS>_ds.txt`, 19 campos separados por `|`).
     """
+    rnos_fmt = re.sub(r"\D", "", str(rnos or "")).zfill(6)[:6]
     lineas: List[str] = []
+
     for f in filas:
         if not f.get("seleccionada") or f.get("estado") != "Listo":
             continue
         if f.get("sin_recupero"):
             continue
-        cuit_prest = re.sub(r"\D", "", str(f.get("cuit_emisor") or "")).zfill(11)
-        cod_cmp = str(f.get("codigo_comprobante_sssalud") or 5)
-        pto_vta = str(int(f.get("punto_venta") or 0)).zfill(4)
-        nro_cmp = str(int(f.get("numero_comprobante") or 0)).zfill(8)
-        fecha_em = f.get("fecha_emision_ddmmaaaa", "")
-        cae = re.sub(r"\D", "", str(f.get("cae") or "")).zfill(14)
-        periodo = str(f.get("periodo") or "")
-        dni = re.sub(r"\D", "", str(f.get("afiliado_dni") or "")).zfill(8)
-        cod_nom = str(f.get("codigo_nomenclador") or "86").zfill(2)
-        cant = str(int(f.get("cantidad") or 1))
-        importe_fmt = f"{float(f.get('importe_total') or 0.0):.2f}".replace(".", ",")
-        dep = "1" if f.get("dependencia") else "0"
+
+        cuil_raw = re.sub(r"\D", "", str(f.get("afiliado_cuil") or ""))
+        dni_raw = re.sub(r"\D", "", str(f.get("afiliado_dni") or ""))
+        cuil_fmt = (cuil_raw if len(cuil_raw) == 11 else dni_raw).zfill(11)[:11]
+
+        cert_fmt = str(f.get("codigo_certificado") or "").strip().ljust(40)[:40]
+
+        venc_raw = str(f.get("vencimiento_certificado") or "").strip()
+        venc_fmt = venc_raw if re.fullmatch(r"\d{2}/\d{2}/\d{4}", venc_raw) else "00/00/0000"
+
+        periodo = re.sub(r"\D", "", str(f.get("periodo") or "")).zfill(6)[:6]
+        cuit_prest = re.sub(r"\D", "", str(f.get("cuit_emisor") or "")).zfill(11)[:11]
+        cod_nom = re.sub(r"\D", "", str(f.get("codigo_nomenclador") or "86")).zfill(3)[:3]
+        es_practica_sin_comp = cod_nom in {"097", "098", "099"}
+
+        fecha_raw = str(f.get("fecha_emision_ddmmaaaa") or "").strip()
+        fecha_em = fecha_raw if re.fullmatch(r"\d{2}/\d{2}/\d{4}", fecha_raw) else "00/00/0000"
+
+        if es_practica_sin_comp:
+            cod_cmp = "00"
+            tipo_emision = "N"
+            if len(periodo) == 6 and periodo.isdigit() and 1 <= int(periodo[4:6]) <= 12:
+                fecha_em = f"01/{periodo[4:6]}/{periodo[:4]}"
+            cae = "0" * 14
+            pto_vta = "0" * 5
+            nro_cmp = "0" * 8
+            imp_comp_fmt = "0" * 14
+            imp_sol_fmt = "0" * 14
+        else:
+            cod_cmp = re.sub(r"\D", "", str(f.get("codigo_comprobante_sssalud") or "5")).zfill(2)[:2]
+            tipo_emision = str(f.get("tipo_emision") or "E").strip().upper()[:1] or "E"
+            cae = re.sub(r"\D", "", str(f.get("cae") or "")).zfill(14)[:14]
+            pto_vta = str(max(0, int(f.get("punto_venta") or 0))).zfill(5)[:5]
+            nro_cmp = str(max(0, int(f.get("numero_comprobante") or 0))).zfill(8)[:8]
+            imp_comp_cents = max(0, int(round(float(f.get("importe_total") or 0.0) * 100)))
+            imp_sol_val = f.get("importe_solicitado")
+            if imp_sol_val is None:
+                imp_sol_val = f.get("importe_total")
+            imp_sol_cents = max(0, int(round(float(imp_sol_val or 0.0) * 100)))
+            imp_comp_fmt = f"{imp_comp_cents:014d}"
+            imp_sol_fmt = f"{imp_sol_cents:014d}"
+
+        cant = str(max(0, int(f.get("cantidad") or 1))).zfill(6)[:6]
+        provincia = re.sub(r"\D", "", str(f.get("provincia") or "00")).zfill(2)[:2]
+        dep = "S" if f.get("dependencia") else "N"
 
         linea = "|".join([
-            f"{cuit_prest}_{cod_cmp}_{int(pto_vta)}_{int(nro_cmp)}",
+            "DS",
+            rnos_fmt,
+            cuil_fmt,
+            cert_fmt,
+            venc_fmt,
+            periodo,
             cuit_prest,
             cod_cmp,
-            pto_vta,
-            nro_cmp,
+            tipo_emision,
             fecha_em,
             cae,
-            periodo,
-            dni,
+            pto_vta,
+            nro_cmp,
+            imp_comp_fmt,
+            imp_sol_fmt,
             cod_nom,
             cant,
-            importe_fmt,
+            provincia,
             dep,
         ])
         lineas.append(linea)

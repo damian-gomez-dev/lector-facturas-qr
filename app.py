@@ -16,6 +16,7 @@ from sapi_facturas_core import (
     obtener_opciones_selector_prestacion,
     recalcular_estados_lote,
     validar_formato_cuit_opcional,
+    validar_rnos_sssalud,
 )
 
 # ==============================================================================
@@ -521,15 +522,17 @@ def inicializar_estado() -> None:
         "cuit_institucional_input": "",
         "cuit_institucional_validado": "",
         "ultimo_cuit_notificado": "",
+        "rnos_institucional_input": "",
+        "rnos_institucional_validado": "",
+        "ultimo_rnos_notificado": "",
         "archivos_seleccionados": [],
         "toast_limite_pendiente": None,
         "toast_informe_pendiente": False,
+        "toast_confirmacion_pendiente": None,
         "facturas_procesadas": [],
         "facturas_rechazadas": [],
         "descargar_formato_sssalud": False,
         "zip_sssalud_bytes": None,
-        "lote_confirmado": False,
-        "facturas_registradas_final": [],
         "uploader_key": 0,
         "revision_editor_version": 0,
     }
@@ -546,11 +549,10 @@ def reiniciar_proceso_completo() -> None:
     st.session_state["archivos_seleccionados"] = []
     st.session_state["toast_limite_pendiente"] = None
     st.session_state["toast_informe_pendiente"] = False
+    st.session_state["toast_confirmacion_pendiente"] = None
     st.session_state["facturas_procesadas"] = []
     st.session_state["facturas_rechazadas"] = []
     st.session_state["zip_sssalud_bytes"] = None
-    st.session_state["lote_confirmado"] = False
-    st.session_state["facturas_registradas_final"] = []
     st.session_state["uploader_key"] += 1
     st.session_state["revision_editor_version"] += 1
 
@@ -584,13 +586,24 @@ def render_cabecera_y_stepper() -> None:
 
     paso = st.session_state["paso_actual"]
 
-    # Campo de CUIT del mismo ancho completo (100%), ubicado entre el título y los 3 pasos
-    cuit_raw = st.text_input(
-        "🏛️ CUIT Institucional (Opcional)",
-        value=st.session_state["cuit_institucional_input"],
-        placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
-        disabled=(paso != "seleccion"),
-    )
+    # Dos campos de texto separados (CUIT y RNOS de la institución) entre el título y los 3 pasos
+    col_cuit, col_rnos = st.columns(2, gap="medium")
+    with col_cuit:
+        cuit_raw = st.text_input(
+            "🏛️ CUIT Institucional (Opcional)",
+            value=st.session_state["cuit_institucional_input"],
+            placeholder="Ej: 30-12345678-9 (dejar vacío para no verificar CUIT receptor)",
+            disabled=(paso != "seleccion"),
+        )
+    with col_rnos:
+        rnos_raw = st.text_input(
+            "🏥 RNOS de la Institución",
+            value=st.session_state["rnos_institucional_input"],
+            placeholder="Ej: 107909 (6 dígitos para generar RNOS_ds.txt)",
+            max_chars=10,
+            disabled=(paso != "seleccion"),
+        )
+
     st.session_state["cuit_institucional_input"] = cuit_raw
     cuit_limpio_input = cuit_raw.strip()
     cuit_valido, _, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
@@ -601,6 +614,18 @@ def render_cabecera_y_stepper() -> None:
                 st.toast(msg_cuit, icon="✅")
             else:
                 st.toast(msg_cuit, icon="⚠️", duration="long")
+
+    st.session_state["rnos_institucional_input"] = rnos_raw
+    rnos_limpio_input = rnos_raw.strip()
+    rnos_valido, rnos_6_validado, msg_rnos = validar_rnos_sssalud(rnos_raw)
+    st.session_state["rnos_institucional_validado"] = rnos_6_validado if rnos_valido else ""
+    if rnos_limpio_input != st.session_state.get("ultimo_rnos_notificado", ""):
+        st.session_state["ultimo_rnos_notificado"] = rnos_limpio_input
+        if rnos_limpio_input:
+            if rnos_valido:
+                st.toast(msg_rnos, icon="✅")
+            else:
+                st.toast(msg_rnos, icon="⚠️", duration="long")
 
     clase_1 = "active" if paso == "seleccion" else "done"
     clase_2 = "active" if paso == "informe" else ("done" if paso == "revision" else "")
@@ -646,6 +671,8 @@ def render_cabecera_y_stepper() -> None:
 def render_paso_1_seleccion() -> None:
     cuit_raw = st.session_state.get("cuit_institucional_input", "")
     cuit_valido, cuit_limpio, _ = validar_formato_cuit_opcional(cuit_raw)
+    rnos_raw = st.session_state.get("rnos_institucional_input", "")
+    rnos_valido, rnos_limpio, msg_rnos = validar_rnos_sssalud(rnos_raw)
 
     toast_limite = st.session_state.pop("toast_limite_pendiente", None)
     if toast_limite:
@@ -706,17 +733,19 @@ def render_paso_1_seleccion() -> None:
                 st.rerun()
 
         with col_btn_scan:
-            boton_deshabilitado = not cuit_valido
+            boton_deshabilitado = (not cuit_valido) or (not rnos_valido)
+            motivos_deshabilitado: List[str] = []
+            if not cuit_valido:
+                motivos_deshabilitado.append("Corrija el CUIT Institucional (11 dígitos) o déjelo vacío.")
+            if not rnos_valido:
+                motivos_deshabilitado.append(msg_rnos)
+
             if st.button(
                 f"🔍 Escanear y Validar {len(archivos_guardados)} Factura(s) Digital(es) →",
                 type="primary",
                 use_container_width=True,
                 disabled=boton_deshabilitado,
-                help=(
-                    "Corrija el CUIT Institucional (11 dígitos) o déjelo vacío para continuar."
-                    if boton_deshabilitado
-                    else None
-                ),
+                help=" ".join(motivos_deshabilitado) if boton_deshabilitado else None,
             ):
                 def _render_modal_progreso(texto: str, porc: int) -> None:
                     modal_progreso.markdown(
@@ -751,13 +780,13 @@ def render_paso_1_seleccion() -> None:
                 modal_progreso.empty()
 
                 st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
+                st.session_state["rnos_institucional_validado"] = rnos_limpio if rnos_valido else ""
                 st.session_state["facturas_procesadas"] = resultado_lote["procesadas"]
                 st.session_state["facturas_rechazadas"] = resultado_lote["rechazadas"]
                 st.session_state["zip_sssalud_bytes"] = generar_zip_sssalud_adaptado(
                     resultado_lote["procesadas"],
                     resultado_lote["rechazadas"],
                 )
-                st.session_state["lote_confirmado"] = False
                 st.session_state["toast_informe_pendiente"] = True
                 st.session_state["paso_actual"] = "informe"
                 st.rerun()
@@ -878,6 +907,10 @@ def render_paso_3_revision() -> None:
     procesadas: List[Dict[str, Any]] = st.session_state["facturas_procesadas"]
     rechazadas: List[Dict[str, Any]] = st.session_state["facturas_rechazadas"]
     cuit_inst = st.session_state.get("cuit_institucional_validado", "")
+
+    toast_confirmacion = st.session_state.pop("toast_confirmacion_pendiente", None)
+    if toast_confirmacion:
+        st.toast(toast_confirmacion, icon="🎉", duration="long")
 
     if not procesadas:
         st.warning("No hay facturas procesadas para revisar.")
@@ -1192,71 +1225,37 @@ def render_paso_3_revision() -> None:
             st.rerun()
 
     with col_confirm:
-        if st.button(
-            f"✅ Confirmar y Registrar {len(seleccionadas_post)} Factura(s)",
-            type="primary",
-            use_container_width=True,
-            disabled=(len(seleccionadas_post) == 0),
-        ):
-            st.session_state["lote_confirmado"] = True
-            st.session_state["facturas_registradas_final"] = [dict(f) for f in seleccionadas_post]
+        rnos_valido_p3, rnos_limpio_p3, _ = validar_rnos_sssalud(
+            st.session_state.get("rnos_institucional_validado")
+            or st.session_state.get("rnos_institucional_input", "")
+        )
+        rnos_para_txt = rnos_limpio_p3 if rnos_valido_p3 else "000000"
+        txt_bytes = generar_txt_sssalud(seleccionadas_post, rnos=rnos_para_txt)
 
-    # Panel de Confirmación Final cuando el usuario registra el lote
-    if st.session_state.get("lote_confirmado") and st.session_state.get("facturas_registradas_final"):
-        registradas = st.session_state["facturas_registradas_final"]
-        con_rec = [f for f in registradas if not f.get("sin_recupero")]
-        sin_rec = [f for f in registradas if f.get("sin_recupero")]
-        total_imp = sum(float(f.get("importe_total") or 0.0) for f in registradas)
-
-        st.markdown("---")
-        st.success(
-            f"🎉 **¡Lote confirmado y autorizado con éxito!** Se registraron **{len(registradas)} factura(s)** "
+        con_rec = [f for f in seleccionadas_post if not f.get("sin_recupero")]
+        sin_rec = [f for f in seleccionadas_post if f.get("sin_recupero")]
+        total_imp = sum(float(f.get("importe_total") or 0.0) for f in seleccionadas_post)
+        msg_confirmacion = (
+            f"**¡Lote confirmado y autorizado con éxito!** Se registraron **{len(seleccionadas_post)} factura(s)** "
             f"por un total de **{formatear_moneda_ars(total_imp)}** "
             f"({len(con_rec)} Con Recupero SSSalud · {len(sin_rec)} Sin Recupero)."
         )
 
-        df_conf = pd.DataFrame([
-            {
-                "#": i + 1,
-                "Identificador SSSalud": f["registro_identificador"],
-                "Prestador": f["prestador_nombre"],
-                "CUIT Emisor": formatear_cuit_guiones(f["cuit_emisor"]),
-                "Comprobante": f"{f['tipo_comprobante_etiqueta']} {f['comprobante_visible']}",
-                "CAE": f["cae"],
-                "Período": f["periodo"],
-                "DNI Afiliado": f["afiliado_dni"],
-                "Cód. SSSalud": "S/R" if f.get("sin_recupero") else f["codigo_nomenclador"],
-                "Prestación": f["prestacion"],
-                "Cant.": f["cantidad"],
-                "Importe": formatear_moneda_ars(f["importe_total"]),
-            }
-            for i, f in enumerate(registradas)
-        ])
-        st.dataframe(df_conf, use_container_width=True, hide_index=True)
+        def _guardar_toast_confirmacion(msg: str) -> None:
+            st.session_state["toast_confirmacion_pendiente"] = msg
 
-        c_dl1, c_dl2, c_dl3 = st.columns(3)
-        with c_dl1:
-            txt_bytes = generar_txt_sssalud(registradas)
-            st.download_button(
-                "📑 Descargar TXT Rendición SSSalud (Con Recupero)",
-                data=txt_bytes,
-                file_name=f"DATOS_SSSALUD_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-                mime="text/plain",
-                use_container_width=True,
-            )
-        with c_dl2:
-            zip_reg = generar_zip_sssalud_adaptado(registradas, rechazadas)
-            st.download_button(
-                "📦 Descargar ZIP PDFs 1 Página (SSSalud)",
-                data=zip_reg,
-                file_name=f"PDFs_SSSalud_Autorizados_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
-                mime="application/zip",
-                use_container_width=True,
-            )
-        with c_dl3:
-            if st.button("🔄 Iniciar Nueva Tanda de Facturas", use_container_width=True):
-                reiniciar_proceso_completo()
-                st.rerun()
+        st.download_button(
+            label=f"✅ Confirmar y Registrar {len(seleccionadas_post)} Factura(s)",
+            data=txt_bytes,
+            file_name=f"{rnos_para_txt}_ds.txt",
+            mime="text/plain",
+            type="primary",
+            use_container_width=True,
+            disabled=(len(seleccionadas_post) == 0),
+            on_click=_guardar_toast_confirmacion,
+            args=(msg_confirmacion,),
+            key="btn_confirmar_y_registrar_txt",
+        )
 
 
 # ==============================================================================
