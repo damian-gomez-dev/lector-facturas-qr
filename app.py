@@ -286,20 +286,25 @@ st.markdown(
         justify-content: center !important;
         text-align: center !important;
         height: auto !important;
-        min-height: 175px !important;
-        padding: 1.75rem 1.5rem !important;
-        gap: 0.95rem !important;
+        min-height: 155px !important;
+        padding: 1.5rem 1.5rem !important;
+        gap: 0.45rem !important;
         background: #ffffff !important;
-        border: 1.5px dashed #cbd5e1 !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 14px !important;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
         margin: 0 auto !important;
+        cursor: pointer !important;
         transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
     }
     [data-testid="stFileUploaderDropzone"]:hover {
         border-color: #2563eb !important;
         background: #f8fafc !important;
         box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08) !important;
+    }
+    [data-testid="stFileUploaderDropzone"] > span,
+    [data-testid="stFileUploaderDropzone"] button {
+        display: none !important;
     }
     [data-testid="stFileUploaderDropzoneInstructions"] {
         display: flex !important;
@@ -325,33 +330,13 @@ st.markdown(
         text-align: center;
     }
     [data-testid="stFileUploaderDropzoneInstructions"]::after {
-        content: "Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.\\ALímite de versión Demo: hasta __MAX_PDFS__ archivos PDF por tanda (máx. 15 MB por archivo).";
+        content: "Arrastre y suelte los archivos aquí o haga clic para seleccionar las facturas electrónicas AFIP/ARCA.\\ALímite de versión Demo: hasta __MAX_PDFS__ archivos PDF por tanda (máx. 15 MB por archivo).";
         display: block;
         white-space: pre-line;
         font-size: 0.85rem;
         color: #64748b;
         line-height: 1.5;
         text-align: center;
-    }
-    [data-testid="stFileUploaderDropzone"] button {
-        font-size: 0 !important;
-        padding: 0.55rem 1.25rem !important;
-        border-radius: 10px !important;
-        border: 1px solid #cbd5e1 !important;
-        background-color: #f8fafc !important;
-        color: #1e293b !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease !important;
-    }
-    [data-testid="stFileUploaderDropzone"] button:hover {
-        border-color: #2563eb !important;
-        color: #1d4ed8 !important;
-        background-color: #eff6ff !important;
-    }
-    [data-testid="stFileUploaderDropzone"] button::after {
-        content: "📎 Seleccionar archivos PDF";
-        font-size: 0.875rem !important;
-        line-height: 1.2 !important;
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stTextInput"] label {
@@ -390,6 +375,8 @@ def inicializar_estado() -> None:
         "cuit_institucional_input": "",
         "cuit_institucional_validado": "",
         "ultimo_cuit_notificado": "",
+        "archivos_seleccionados": [],
+        "toast_limite_pendiente": None,
         "facturas_procesadas": [],
         "facturas_rechazadas": [],
         "descargar_formato_sssalud": False,
@@ -408,6 +395,8 @@ inicializar_estado()
 
 def reiniciar_proceso_completo() -> None:
     st.session_state["paso_actual"] = "seleccion"
+    st.session_state["archivos_seleccionados"] = []
+    st.session_state["toast_limite_pendiente"] = None
     st.session_state["facturas_procesadas"] = []
     st.session_state["facturas_rechazadas"] = []
     st.session_state["zip_sssalud_bytes"] = None
@@ -508,54 +497,67 @@ def render_paso_1_seleccion() -> None:
     cuit_raw = st.session_state.get("cuit_institucional_input", "")
     cuit_valido, cuit_limpio, _ = validar_formato_cuit_opcional(cuit_raw)
 
-    uploaded_files = st.file_uploader(
-        f"Seleccione hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF",
-        type=["pdf"],
-        accept_multiple_files=True,
-        key=f"pdf_uploader_{st.session_state['uploader_key']}",
-    )
+    toast_limite = st.session_state.pop("toast_limite_pendiente", None)
+    if toast_limite:
+        st.toast(toast_limite, icon="⚠️", duration="long")
 
-    if uploaded_files:
-        total_subidos = len(uploaded_files)
-        excede_limite = total_subidos > MAX_PDFS_POR_TANDA_DEMO
+    archivos_guardados: List[tuple[str, bytes]] = st.session_state.get("archivos_seleccionados", [])
 
-        if excede_limite:
-            st.warning(
-                f"⚠️ **Límite de Versión Demo ({MAX_PDFS_POR_TANDA_DEMO} PDFs por tanda):** "
-                f"Ha seleccionado **{total_subidos} archivos**. Se procesarán únicamente los **primeros {MAX_PDFS_POR_TANDA_DEMO} PDFs** "
-                f"y se omitirán los {total_subidos - MAX_PDFS_POR_TANDA_DEMO} restantes."
+    if not archivos_guardados:
+        uploaded_files = st.file_uploader(
+            f"Seleccione hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF",
+            type=["pdf"],
+            accept_multiple_files=True,
+            key=f"pdf_uploader_{st.session_state['uploader_key']}",
+        )
+
+        if uploaded_files:
+            total_subidos = len(uploaded_files)
+            archivos_activos = uploaded_files[:MAX_PDFS_POR_TANDA_DEMO]
+            st.session_state["archivos_seleccionados"] = [
+                (f.name, f.getvalue()) for f in archivos_activos
+            ]
+            if total_subidos > MAX_PDFS_POR_TANDA_DEMO:
+                st.session_state["toast_limite_pendiente"] = (
+                    f"Límite de Versión Demo: se aceptan hasta {MAX_PDFS_POR_TANDA_DEMO} archivos. "
+                    f"Se tomaron los primeros {MAX_PDFS_POR_TANDA_DEMO} de {total_subidos}."
+                )
+            st.session_state["uploader_key"] += 1
+            st.rerun()
+        else:
+            st.markdown(
+                f"""
+                <div style="width: 100%; box-sizing: border-box; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.9rem 1rem; border-radius: 12px; font-size: 0.9rem; margin-top: 0.5rem;">
+                    👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-
-        archivos_activos = uploaded_files[:MAX_PDFS_POR_TANDA_DEMO]
-        archivos_omitidos = uploaded_files[MAX_PDFS_POR_TANDA_DEMO:]
-
-        # Tabla resumen de archivos seleccionados
+    else:
+        # Tabla resumen de archivos seleccionados (ocupa el espacio completo del bloque de carga)
         df_files = pd.DataFrame([
             {
                 "#": idx + 1,
-                "Archivo PDF": f.name,
-                "Tamaño (KB)": f"{len(f.getvalue()) / 1024:.1f} KB",
-                "Estado en Tanda": "Incluido en la tanda (1-15)",
+                "Archivo PDF": nombre,
+                "Tamaño (KB)": f"{len(contenido) / 1024:.1f} KB",
+                "Estado en Tanda": f"Incluido en la tanda (1-{MAX_PDFS_POR_TANDA_DEMO})",
             }
-            for idx, f in enumerate(archivos_activos)
+            for idx, (nombre, contenido) in enumerate(archivos_guardados)
         ])
-        st.dataframe(df_files, use_container_width=True, hide_index=True, height=min(280, 45 + 35 * len(archivos_activos)))
-
-        if archivos_omitidos:
-            with st.expander(f"Ver {len(archivos_omitidos)} archivo(s) omitido(s) por el límite de {MAX_PDFS_POR_TANDA_DEMO} PDFs"):
-                for f_om in archivos_omitidos:
-                    st.caption(f"• {f_om.name} ({len(f_om.getvalue()) / 1024:.1f} KB)")
+        st.dataframe(df_files, use_container_width=True, hide_index=True, height=270)
 
         col_btn_clear, col_btn_scan = st.columns([1, 2])
         with col_btn_clear:
             if st.button("🗑️ Vaciar lista de PDFs", use_container_width=True):
+                st.session_state["archivos_seleccionados"] = []
+                st.session_state["toast_limite_pendiente"] = None
                 st.session_state["uploader_key"] += 1
                 st.rerun()
 
         with col_btn_scan:
             boton_deshabilitado = not cuit_valido
             if st.button(
-                f"🔍 Escanear y Validar {len(archivos_activos)} Factura(s) Digital(es) →",
+                f"🔍 Escanear y Validar {len(archivos_guardados)} Factura(s) Digital(es) →",
                 type="primary",
                 use_container_width=True,
                 disabled=boton_deshabilitado,
@@ -566,7 +568,7 @@ def render_paso_1_seleccion() -> None:
                 ),
             ):
                 barra = st.progress(0, text="Iniciando lectura multicapa de códigos QR AFIP/ARCA...")
-                lote_tuplas = [(f.name, f.getvalue()) for f in archivos_activos]
+                lote_tuplas = list(archivos_guardados)
 
                 def _actualizar_progreso(actual: int, total: int, nombre: str) -> None:
                     porc = int((actual / max(total, 1)) * 100)
@@ -589,15 +591,6 @@ def render_paso_1_seleccion() -> None:
                 st.session_state["lote_confirmado"] = False
                 st.session_state["paso_actual"] = "informe"
                 st.rerun()
-    else:
-        st.markdown(
-            f"""
-            <div style="width: 100%; box-sizing: border-box; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.9rem 1rem; border-radius: 12px; font-size: 0.9rem; margin-top: 0.5rem;">
-                👆 Arrastre o seleccione entre <b>1 y {MAX_PDFS_POR_TANDA_DEMO} archivos PDF</b> para iniciar el escaneo QR y validación.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 
 # ==============================================================================
