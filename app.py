@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -360,6 +361,69 @@ st.markdown(
         border-radius: 12px !important;
         box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.14) !important;
     }
+
+    /* Modal emergente centrado para progreso de escaneo */
+    .sapi-scan-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(4px);
+        z-index: 999998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    .sapi-scan-modal {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.75rem 2rem;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .sapi-scan-icon {
+        font-size: 2rem;
+        line-height: 1;
+        margin-bottom: 0.6rem;
+    }
+    .sapi-scan-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.35rem 0;
+    }
+    .sapi-scan-sub {
+        font-size: 0.88rem;
+        color: #475569;
+        margin: 0;
+        word-break: break-word;
+        line-height: 1.4;
+    }
+    .sapi-progress-track {
+        width: 100%;
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 1rem 0 0.5rem 0;
+    }
+    .sapi-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
+        border-radius: 999px;
+        transition: width 0.25s ease;
+    }
+    .sapi-scan-pct {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1d4ed8;
+        margin: 0;
+    }
 </style>
 """.replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
     unsafe_allow_html=True,
@@ -501,6 +565,7 @@ def render_paso_1_seleccion() -> None:
     if toast_limite:
         st.toast(toast_limite, icon="⚠️", duration="long")
 
+    modal_progreso = st.empty()
     archivos_guardados: List[tuple[str, bytes]] = st.session_state.get("archivos_seleccionados", [])
 
     if not archivos_guardados:
@@ -567,19 +632,37 @@ def render_paso_1_seleccion() -> None:
                     else None
                 ),
             ):
-                barra = st.progress(0, text="Iniciando lectura multicapa de códigos QR AFIP/ARCA...")
+                def _render_modal_progreso(texto: str, porc: int) -> None:
+                    modal_progreso.markdown(
+                        f"""
+<div class="sapi-scan-overlay">
+    <div class="sapi-scan-modal">
+        <div class="sapi-scan-icon">🔍</div>
+        <p class="sapi-scan-title">Escaneando Facturas Digitales (QR)</p>
+        <p class="sapi-scan-sub">{html.escape(texto)}</p>
+        <div class="sapi-progress-track">
+            <div class="sapi-progress-fill" style="width: {porc}%;"></div>
+        </div>
+        <p class="sapi-scan-pct">{porc}% completado</p>
+    </div>
+</div>
+""",
+                        unsafe_allow_html=True,
+                    )
+
+                _render_modal_progreso("Iniciando lectura multicapa de códigos QR AFIP/ARCA...", 0)
                 lote_tuplas = list(archivos_guardados)
 
                 def _actualizar_progreso(actual: int, total: int, nombre: str) -> None:
                     porc = int((actual / max(total, 1)) * 100)
-                    barra.progress(porc, text=f"Escaneando ({actual}/{total}): {nombre}...")
+                    _render_modal_progreso(f"Escaneando ({actual}/{total}): {nombre}...", porc)
 
                 resultado_lote = escanear_lote_pdfs(
                     archivos_pdf=lote_tuplas,
                     cuit_institucional=cuit_limpio if cuit_valido else "",
                     progreso_callback=_actualizar_progreso,
                 )
-                barra.empty()
+                modal_progreso.empty()
 
                 st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
                 st.session_state["facturas_procesadas"] = resultado_lote["procesadas"]
