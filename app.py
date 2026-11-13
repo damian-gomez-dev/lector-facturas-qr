@@ -10,7 +10,6 @@ from sapi_facturas_core import (
     CODIGOS_DEPENDENCIA_VALIDOS,
     escanear_lote_pdfs,
     formatear_cuit_guiones,
-    formatear_periodo_legible,
     generar_csv_revision,
     generar_excel_revision,
     generar_txt_sssalud,
@@ -449,6 +448,7 @@ def inicializar_estado() -> None:
         "lote_confirmado": False,
         "facturas_registradas_final": [],
         "uploader_key": 0,
+        "revision_editor_version": 0,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -469,6 +469,7 @@ def reiniciar_proceso_completo() -> None:
     st.session_state["lote_confirmado"] = False
     st.session_state["facturas_registradas_final"] = []
     st.session_state["uploader_key"] += 1
+    st.session_state["revision_editor_version"] += 1
 
 
 def formatear_moneda_ars(valor: float) -> str:
@@ -866,204 +867,281 @@ def render_paso_3_revision() -> None:
                 use_container_width=True,
             )
 
-    # Contadores en tiempo real y acciones rápidas de selección
-    listas = [f for f in procesadas if f.get("estado") == "Listo"]
-    con_error = [f for f in procesadas if f.get("estado") != "Listo"]
-    seleccionadas = [f for f in procesadas if f.get("seleccionada") and f.get("estado") == "Listo"]
-    importe_seleccionado = sum(float(f.get("importe_total") or 0.0) for f in seleccionadas)
-
+    # Contadores en tiempo real (se actualizan tras procesar ediciones de la tabla) y acciones rápidas
     c_stat1, c_stat2, c_stat3, c_stat4, c_act1, c_act2 = st.columns([1, 1, 1, 1.3, 1.1, 1.1])
-    c_stat1.metric("Total en Revisión", len(procesadas))
-    c_stat2.metric("Listas (Válidas)", len(listas))
-    c_stat3.metric("Con Observaciones", len(con_error))
-    c_stat4.metric("Importe Seleccionado", formatear_moneda_ars(importe_seleccionado))
+    ph_stat1 = c_stat1.empty()
+    ph_stat2 = c_stat2.empty()
+    ph_stat3 = c_stat3.empty()
+    ph_stat4 = c_stat4.empty()
 
     with c_act1:
         if st.button("☑️ Seleccionar todas las Listas", use_container_width=True):
             for f in procesadas:
                 f["seleccionada"] = (f.get("estado") == "Listo")
+            st.session_state["revision_editor_version"] += 1
             st.rerun()
     with c_act2:
         if st.button("⬜ Desmarcar todas", use_container_width=True):
             for f in procesadas:
                 f["seleccionada"] = False
+            st.session_state["revision_editor_version"] += 1
             st.rerun()
 
-    st.markdown("---")
+    # Construcción de la tabla interactiva (filas y columnas) para Revisión y Autorización
+    def _texto_observacion(fila: Dict[str, Any]) -> str:
+        if fila.get("estado") != "Listo":
+            return str(fila.get("motivo_estado") or "Error")
+        advs = fila.get("advertencias") or []
+        if advs:
+            return "⚠️ " + " | ".join(str(a) for a in advs)
+        return "Listo para autorizar"
 
-    # Listado interactivo de revisión de cada factura (Estilo SAPI Web)
-    id_a_eliminar = None
+    filas_editor = []
+    snapshots_previos = []
+    for fila in procesadas:
+        es_listo = fila.get("estado") == "Listo"
+        pto_vta = int(fila.get("punto_venta") or 0)
+        nro_comp = int(fila.get("numero_comprobante") or 0)
+        label_actual = _obtener_label_actual(fila)
+        obs_actual = _texto_observacion(fila)
+
+        filas_editor.append({
+            "Aut.": bool(fila.get("seleccionada", False)) and es_listo,
+            "Estado": "✓ Listo" if es_listo else "✕ Error",
+            "Archivo": fila["archivo"],
+            "Comp": f"{pto_vta}-{nro_comp}",
+            "Tipo": fila["tipo_comprobante_etiqueta"],
+            "Importe": formatear_moneda_ars(fila["importe_total"]),
+            "Prestador": str(fila.get("prestador_nombre") or ""),
+            "Período": str(fila.get("periodo") or ""),
+            "DNI Afiliado": str(fila.get("afiliado_dni") or ""),
+            "Nombre Afiliado": str(fila.get("afiliado_nombre") or ""),
+            "Nomenclador SSSalud": label_actual,
+            "Cant.": int(fila.get("cantidad") or 1),
+            "Dep.": bool(fila.get("dependencia", False)),
+            "Observación": obs_actual,
+            "Quitar": False,
+        })
+        snapshots_previos.append({
+            "estado": fila.get("estado"),
+            "motivo": fila.get("motivo_estado"),
+            "obs": obs_actual,
+            "seleccionada": bool(fila.get("seleccionada", False)) and es_listo,
+            "cantidad": int(fila.get("cantidad") or 1),
+            "dependencia": bool(fila.get("dependencia", False)),
+            "dni": str(fila.get("afiliado_dni") or ""),
+        })
+
+    df_editor = pd.DataFrame(filas_editor)
+    alto_editor = min(480, max(240, 42 + 36 * len(filas_editor)))
+
+    edited_df = st.data_editor(
+        df_editor,
+        use_container_width=True,
+        hide_index=True,
+        height=alto_editor,
+        num_rows="fixed",
+        key=f"tabla_revision_{st.session_state['revision_editor_version']}",
+        disabled=["Estado", "Archivo", "Comp", "Tipo", "Importe", "Observación"],
+        column_config={
+            "Aut.": st.column_config.CheckboxColumn(
+                "Aut.",
+                width="small",
+                pinned=True,
+                help="Incluir esta factura en la autorización y exportación final.",
+            ),
+            "Estado": st.column_config.TextColumn("Estado", width="small", pinned=True),
+            "Archivo": st.column_config.TextColumn("Archivo", width="medium"),
+            "Comp": st.column_config.TextColumn("Comp", width="small"),
+            "Tipo": st.column_config.TextColumn("Tipo", width="small"),
+            "Importe": st.column_config.TextColumn("Importe", width="small"),
+            "Prestador": st.column_config.TextColumn("Prestador", width="medium"),
+            "Período": st.column_config.TextColumn(
+                "Período",
+                width="small",
+                max_chars=6,
+                help="Período prestacional en formato AAAAMM (ej: 202603).",
+            ),
+            "DNI Afiliado": st.column_config.TextColumn(
+                "DNI Afiliado",
+                width="small",
+                max_chars=10,
+                help="DNI del afiliado/beneficiario (7 u 8 dígitos numéricos).",
+            ),
+            "Nombre Afiliado": st.column_config.TextColumn(
+                "Nombre Afiliado",
+                width="medium",
+                help="Opcional: Apellido y Nombre del afiliado.",
+            ),
+            "Nomenclador SSSalud": st.column_config.SelectboxColumn(
+                "Nomenclador SSSalud",
+                width="large",
+                options=labels_opciones,
+                required=True,
+            ),
+            "Cant.": st.column_config.NumberColumn(
+                "Cant.",
+                width="small",
+                min_value=1,
+                max_value=99999,
+                step=1,
+                format="%d",
+                help="Para códigos 90 y 91 es fijo (4). Para Transporte (96), Apoyo (86) o Sin Recupero puede editarse.",
+            ),
+            "Dep.": st.column_config.CheckboxColumn(
+                "Dep.",
+                width="small",
+                help="Adicional por Dependencia (sólo códigos SSSalud habilitados).",
+            ),
+            "Observación": st.column_config.TextColumn("Observación", width="large"),
+            "Quitar": st.column_config.CheckboxColumn(
+                "Quitar",
+                width="small",
+                help="Marque para quitar esta factura del lote.",
+            ),
+        },
+    )
+
+    # Sincronizar ediciones de la tabla con el estado interno
+    def _str_celda(val: Any) -> str:
+        return "" if pd.isna(val) else str(val)
+
+    def _bool_celda(val: Any) -> bool:
+        return False if pd.isna(val) else bool(val)
+
+    def _int_celda(val: Any, default: int = 1) -> int:
+        if pd.isna(val):
+            return default
+        try:
+            return max(1, int(val))
+        except (TypeError, ValueError):
+            return default
+
+    ids_a_eliminar = set()
+    requiere_reset_editor = False
 
     for idx, fila in enumerate(procesadas):
-        fid = fila["id"]
-        es_listo = fila.get("estado") == "Listo"
-        borde_color = "#86efac" if es_listo else "#fca5a5"
-        fondo_header = "#f0fdf4" if es_listo else "#fef2f2"
+        if idx >= len(edited_df):
+            break
+        row = edited_df.iloc[idx]
+        if _bool_celda(row["Quitar"]):
+            ids_a_eliminar.add(fila["id"])
+            continue
 
-        with st.container():
-            st.markdown(
-                f"""
-                <div style="border: 1px solid {borde_color}; border-radius: 12px; padding: 0.7rem 1rem; background: {fondo_header}; margin-bottom: 0.35rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-                    <div style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
-                        <span style="font-weight:800; color:#0f172a; font-size:0.9rem;">#{idx + 1}</span>
-                        <span style="font-weight:700; color:#1e293b; font-size:0.9rem;">📄 {fila['archivo']}</span>
-                        <span class="badge-info" title="Identificador estructurado SSSalud (CUIT_TIPO_PTO_NRO)">{fila['registro_identificador']}</span>
-                        <span style="font-size:0.82rem; color:#334155;">
-                            <b>{fila['tipo_comprobante_etiqueta']}</b> ({fila['comprobante_visible']}) ·
-                            CAE: <code>{fila['cae']}</code> ·
-                            Emisión: <b>{fila['fecha_emision_ddmmaaaa']}</b> ·
-                            CUIT Emisor: <code>{formatear_cuit_guiones(fila['cuit_emisor'])}</code>
-                            {f" · CUIT Receptor: <code>{formatear_cuit_guiones(fila['cuit_receptor'])}</code>" if fila.get('cuit_receptor') else ""}
-                        </span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:0.75rem;">
-                        <span style="font-size:1.05rem; font-weight:800; color:#0f172a;">{formatear_moneda_ars(fila['importe_total'])}</span>
-                        {"<span class='badge-ok'>✓ Listo</span>" if es_listo else f"<span class='badge-err'>✕ {fila.get('motivo_estado', 'Error')}</span>"}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        prestador_edit = _str_celda(row["Prestador"]).strip()
+        fila["prestador_nombre"] = prestador_edit or f"Prestador ({formatear_cuit_guiones(fila['cuit_emisor'])})"
+        fila["periodo"] = _str_celda(row["Período"]).strip()
+        dni_raw = _str_celda(row["DNI Afiliado"])
+        dni_digits = "".join(ch for ch in dni_raw if ch.isdigit())
+        if dni_digits != dni_raw:
+            requiere_reset_editor = True
+        fila["afiliado_dni"] = dni_digits
+        fila["afiliado_nombre"] = _str_celda(row["Nombre Afiliado"]).strip()
 
-            # Controles editables de la fila
-            col_sel, col_prest, col_per, col_dni, col_af_nom, col_nomen, col_cant, col_sr, col_del = st.columns(
-                [0.55, 1.55, 0.95, 1.0, 1.25, 2.35, 0.7, 0.75, 0.55],
-                gap="small",
-            )
+        label_elegido = _str_celda(row["Nomenclador SSSalud"]) or labels_opciones[0]
+        op_elegida = mapa_label_a_op.get(label_elegido, opciones_prestacion[0])
+        cambio_prestacion = (
+            op_elegida["codigo"] != fila.get("codigo_nomenclador")
+            or op_elegida["sin_recupero"] != fila.get("sin_recupero")
+            or op_elegida["descripcion"] != fila.get("prestacion")
+        )
+        fila["codigo_nomenclador"] = op_elegida["codigo"]
+        fila["prestacion"] = op_elegida["descripcion"]
+        fila["sin_recupero"] = op_elegida["sin_recupero"]
 
-            with col_sel:
-                sel_val = st.checkbox(
-                    "Aut.",
-                    value=bool(fila.get("seleccionada", False)) and es_listo,
-                    key=f"sel_{fid}",
-                    disabled=not es_listo,
-                    help="Incluir esta factura en la autorización y exportación final.",
-                )
-                fila["seleccionada"] = sel_val
+        cant_edit = _int_celda(row["Cant."], 1)
+        if cambio_prestacion:
+            if op_elegida["codigo"] in CODIGOS_CON_CANTIDAD_CUATRO:
+                fila["cantidad"] = 4
+                requiere_reset_editor = True
+            elif not op_elegida["sin_recupero"] and op_elegida["codigo"] != "96":
+                fila["cantidad"] = int(op_elegida.get("cantidad_default") or 1)
+                requiere_reset_editor = True
+            else:
+                fila["cantidad"] = cant_edit
+        else:
+            cod_actual = str(fila.get("codigo_nomenclador") or "")
+            es_fijo_4 = (not fila.get("sin_recupero")) and (cod_actual in CODIGOS_CON_CANTIDAD_CUATRO)
+            if es_fijo_4:
+                if cant_edit != 4:
+                    requiere_reset_editor = True
+                fila["cantidad"] = 4
+            else:
+                fila["cantidad"] = cant_edit
 
-            with col_prest:
-                nuevo_prestador = st.text_input(
-                    "Prestador (Razón Social)",
-                    value=str(fila.get("prestador_nombre") or ""),
-                    key=f"prest_{fid}",
-                )
-                fila["prestador_nombre"] = nuevo_prestador.strip() or f"Prestador ({formatear_cuit_guiones(fila['cuit_emisor'])})"
+        admite_dep = (not fila.get("sin_recupero")) and (
+            str(fila.get("codigo_nomenclador") or "") in CODIGOS_DEPENDENCIA_VALIDOS
+        )
+        dep_edit = _bool_celda(row["Dep."])
+        if not admite_dep and dep_edit:
+            requiere_reset_editor = True
+        fila["dependencia"] = dep_edit if admite_dep else False
 
-            with col_per:
-                nuevo_periodo = st.text_input(
-                    "Período (AAAAMM)",
-                    value=str(fila.get("periodo") or ""),
-                    max_chars=6,
-                    placeholder="202603",
-                    key=f"per_{fid}",
-                    help=f"Período prestacional en formato AAAAMM ({formatear_periodo_legible(fila.get('periodo', ''))}).",
-                )
-                fila["periodo"] = nuevo_periodo.strip()
+        fila["seleccionada"] = _bool_celda(row["Aut."])
 
-            with col_dni:
-                nuevo_dni = st.text_input(
-                    "DNI Afiliado",
-                    value=str(fila.get("afiliado_dni") or ""),
-                    max_chars=10,
-                    placeholder="7 u 8 dígitos",
-                    key=f"dni_{fid}",
-                    help="DNI del afiliado/beneficiario (7 u 8 dígitos numéricos).",
-                )
-                fila["afiliado_dni"] = "".join(ch for ch in nuevo_dni if ch.isdigit())
-
-            with col_af_nom:
-                nuevo_af_nombre = st.text_input(
-                    "Nombre Afiliado (Opc.)",
-                    value=str(fila.get("afiliado_nombre") or ""),
-                    placeholder="Apellido y Nombre",
-                    key=f"afnom_{fid}",
-                )
-                fila["afiliado_nombre"] = nuevo_af_nombre.strip()
-
-            with col_nomen:
-                label_actual = _obtener_label_actual(fila)
-                idx_op = labels_opciones.index(label_actual) if label_actual in labels_opciones else 0
-                label_elegido = st.selectbox(
-                    "Cód. Nomenclador SSSalud / Prestación",
-                    options=labels_opciones,
-                    index=idx_op,
-                    key=f"nom_{fid}",
-                )
-                op_elegida = mapa_label_a_op[label_elegido]
-                cambio_prestacion = (
-                    op_elegida["codigo"] != fila.get("codigo_nomenclador")
-                    or op_elegida["sin_recupero"] != fila.get("sin_recupero")
-                    or op_elegida["descripcion"] != fila.get("prestacion")
-                )
-                fila["codigo_nomenclador"] = op_elegida["codigo"]
-                fila["prestacion"] = op_elegida["descripcion"]
-                fila["sin_recupero"] = op_elegida["sin_recupero"]
-                if cambio_prestacion:
-                    if op_elegida["codigo"] in CODIGOS_CON_CANTIDAD_CUATRO:
-                        fila["cantidad"] = 4
-                    elif not op_elegida["sin_recupero"] and op_elegida["codigo"] != "96":
-                        fila["cantidad"] = int(op_elegida.get("cantidad_default") or 1)
-
-            with col_cant:
-                cod_actual = str(fila.get("codigo_nomenclador") or "")
-                es_fijo_4 = (not fila.get("sin_recupero")) and (cod_actual in CODIGOS_CON_CANTIDAD_CUATRO)
-                if es_fijo_4:
-                    fila["cantidad"] = 4
-                nueva_cant = st.number_input(
-                    "Cant.",
-                    min_value=1,
-                    max_value=99999,
-                    value=int(fila.get("cantidad") or 1),
-                    step=1,
-                    disabled=es_fijo_4,
-                    key=f"cant_{fid}_{ es_fijo_4 }",
-                    help="Para códigos 90 y 91 es fijo (4). Para Transporte (96), Apoyo (86) o Sin Recupero puede editarse.",
-                )
-                fila["cantidad"] = 4 if es_fijo_4 else int(nueva_cant)
-
-            with col_sr:
-                admite_dep = (not fila.get("sin_recupero")) and (str(fila.get("codigo_nomenclador") or "") in CODIGOS_DEPENDENCIA_VALIDOS)
-                if admite_dep:
-                    dep_val = st.checkbox(
-                        "Dep.",
-                        value=bool(fila.get("dependencia", False)),
-                        key=f"dep_{fid}",
-                        help="Adicional por Dependencia (habilitado para este código SSSalud).",
-                    )
-                    fila["dependencia"] = dep_val
-                else:
-                    fila["dependencia"] = False
-                    st.caption("S/R: **Sí**" if fila.get("sin_recupero") else f"Cód: **{fila.get('codigo_nomenclador') or '-'}**")
-
-            with col_del:
-                st.write("")
-                if st.button("🗑️", key=f"del_{fid}", help="Quitar esta factura del lote"):
-                    id_a_eliminar = fid
-
-            # Visor de PDF integrado bajo demanda y advertencias de cronograma
-            col_prev, col_adv = st.columns([1.2, 2.8])
-            with col_prev:
-                with st.expander(f"👁️ Ver Factura PDF ({fila['archivo']})"):
-                    png_preview = renderizar_preview_pdf_png(fila.get("pdf_bytes", b""), zoom=1.35)
-                    if png_preview:
-                        st.image(png_preview, caption=f"Página 1 · {fila['archivo']} ({fila['registro_identificador']})", use_container_width=True)
-                    else:
-                        st.warning("No se pudo generar la vista previa gráfica del PDF.")
-            with col_adv:
-                if fila.get("advertencias"):
-                    for adv in fila["advertencias"]:
-                        st.markdown(f"<span class='badge-warn'>⚠️ {adv}</span>", unsafe_allow_html=True)
-
-            st.markdown("<div style='margin-bottom: 0.65rem;'></div>", unsafe_allow_html=True)
-
-    if id_a_eliminar is not None:
-        st.session_state["facturas_procesadas"] = [f for f in procesadas if f["id"] != id_a_eliminar]
+    if ids_a_eliminar:
+        st.session_state["facturas_procesadas"] = [f for f in procesadas if f["id"] not in ids_a_eliminar]
+        st.session_state["revision_editor_version"] += 1
         st.rerun()
 
-    # Recalcular después de las ediciones interactivas
+    # Recalcular validaciones después de sincronizar
     recalcular_estados_lote(procesadas)
+
+    cambio_estado_o_obs = False
+    for idx, fila in enumerate(procesadas):
+        if idx >= len(edited_df):
+            break
+        prev = snapshots_previos[idx]
+        obs_nueva = _texto_observacion(fila)
+        sel_post = bool(fila.get("seleccionada", False)) and (fila.get("estado") == "Listo")
+        if sel_post != _bool_celda(edited_df.iloc[idx]["Aut."]):
+            requiere_reset_editor = True
+        if (
+            fila.get("estado") != prev["estado"]
+            or obs_nueva != prev["obs"]
+            or int(fila.get("cantidad") or 1) != prev["cantidad"]
+            or bool(fila.get("dependencia", False)) != prev["dependencia"]
+        ):
+            cambio_estado_o_obs = True
+
+    if requiere_reset_editor:
+        st.session_state["revision_editor_version"] += 1
+        st.rerun()
+    elif cambio_estado_o_obs:
+        st.rerun()
+
+    # Poblar métricas en tiempo real con valores recalculados
     listas_post = [f for f in procesadas if f.get("estado") == "Listo"]
+    con_error_post = [f for f in procesadas if f.get("estado") != "Listo"]
     seleccionadas_post = [f for f in procesadas if f.get("seleccionada") and f.get("estado") == "Listo"]
+    importe_seleccionado = sum(float(f.get("importe_total") or 0.0) for f in seleccionadas_post)
+
+    ph_stat1.metric("Total en Revisión", len(procesadas))
+    ph_stat2.metric("Listas (Válidas)", len(listas_post))
+    ph_stat3.metric("Con Observaciones", len(con_error_post))
+    ph_stat4.metric("Importe Seleccionado", formatear_moneda_ars(importe_seleccionado))
+
+    # Visor rápido de PDF bajo demanda sin romper la vista tabular
+    with st.expander("👁️ Vista previa rápida de Factura PDF"):
+        opciones_preview = {
+            f"#{i + 1} · {f['archivo']} · {f['prestador_nombre']} ({formatear_moneda_ars(f['importe_total'])})": f
+            for i, f in enumerate(procesadas)
+        }
+        sel_preview = st.selectbox(
+            "Seleccione un comprobante para visualizar su primera página:",
+            options=list(opciones_preview.keys()),
+            key="selector_preview_pdf_paso3",
+        )
+        fila_prev = opciones_preview[sel_preview]
+        png_preview = renderizar_preview_pdf_png(fila_prev.get("pdf_bytes", b""), zoom=1.35)
+        if png_preview:
+            st.image(
+                png_preview,
+                caption=f"Página 1 · {fila_prev['archivo']} ({fila_prev['registro_identificador']})",
+                use_container_width=True,
+            )
+        else:
+            st.warning("No se pudo generar la vista previa gráfica del PDF.")
 
     # Barra inferior de acciones y exportaciones (igual a SAPI Web)
     st.markdown("---")
