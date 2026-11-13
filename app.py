@@ -10,13 +10,11 @@ from sapi_facturas_core import (
     CODIGOS_DEPENDENCIA_VALIDOS,
     escanear_lote_pdfs,
     formatear_cuit_guiones,
-    generar_csv_revision,
     generar_excel_revision,
     generar_txt_sssalud,
     generar_zip_sssalud_adaptado,
     obtener_opciones_selector_prestacion,
     recalcular_estados_lote,
-    renderizar_preview_pdf_png,
     validar_formato_cuit_opcional,
 )
 
@@ -422,6 +420,73 @@ st.markdown(
         font-weight: 700;
         color: #1d4ed8;
         margin: 0;
+    }
+
+    /* Tarjetas métricas y barra compacta superior en Paso 3 */
+    .rev-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 0.85rem;
+    }
+    .rev-kpi-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
+    .rev-kpi-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+        margin: 0;
+    }
+    .rev-kpi-val {
+        font-size: 1.45rem;
+        font-weight: 800;
+        line-height: 1;
+        margin: 0;
+    }
+    .st-key-btn_sel_all_paso3 button,
+    .st-key-btn_desel_all_paso3 button {
+        font-size: 0.78rem !important;
+        padding: 0.25rem 0.65rem !important;
+        min-height: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        white-space: nowrap !important;
+    }
+    .st-key-btn_excel_icon button {
+        width: 34px !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 !important;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23185C37' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath fill='%2321A366' d='M14 2v6h6z'/%3E%3Cpath fill='%23107C41' d='M14 8h6v12a2 2 0 0 1-2 2h-4z'/%3E%3Crect x='2' y='6.5' width='11' height='11' rx='2' fill='%23107C41'/%3E%3Cpath fill='%23FFFFFF' d='M5.1 9.2h1.55l1.15 2.05 1.15-2.05h1.5l-1.8 2.8 1.9 2.9H8.95l-1.2-2.1-1.2 2.1H5.0l1.9-2.9z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 20px 20px !important;
+    }
+    .st-key-btn_excel_icon button:hover {
+        border-color: #107C41 !important;
+        background-color: #f0fdf4 !important;
+    }
+    .st-key-btn_excel_icon button > div {
+        display: none !important;
+    }
+    [data-testid="stPopover"] button {
+        min-height: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        padding: 0 0.55rem !important;
+        font-size: 0.85rem !important;
     }
 </style>
 """.replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
@@ -830,62 +895,9 @@ def render_paso_3_revision() -> None:
                     return op["label"]
         return labels_opciones[0]
 
-    # Banner informativo sobre modo de validación sin listado de autorizaciones
-    st.markdown(
-        """
-        <div class="sapi-card" style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 0.95rem 1.25rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-                <div>
-                    <p style="margin:0; font-size:0.92rem; font-weight:700; color:#1e3a8a;">
-                        📋 Revisión y Autorización de Comprobantes (Modo sin cruce de autorizaciones)
-                    </p>
-                    <p style="margin:0.2rem 0 0 0; font-size:0.82rem; color:#475569;">
-                        Verifique o complete el <b>Período (AAAAMM)</b>, el <b>DNI del Afiliado (7-8 dígitos)</b> y la
-                        <b>Codificación del Nomenclador SSSalud (Códigos 1 al 99 o Sin Recupero)</b>.
-                        El sistema valida en tiempo real duplicados dentro del lote y consistencia de datos.
-                    </p>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Si en el Paso 2 el usuario dejó tildado "Descargar formato SSSalud", mostrar acceso directo destacado
-    if st.session_state.get("descargar_formato_sssalud"):
-        zip_bytes = generar_zip_sssalud_adaptado(procesadas, rechazadas)
-        st.session_state["zip_sssalud_bytes"] = zip_bytes
-        col_aviso_zip, col_btn_zip_top = st.columns([2.2, 1])
-        with col_aviso_zip:
-            st.info("📦 **Formato SSSalud (1 página · 3 carpetas) preparado:** Puede descargar el archivo `.zip` adaptado en cualquier momento.")
-        with col_btn_zip_top:
-            st.download_button(
-                "⬇️ Descargar ZIP SSSalud Adaptado",
-                data=zip_bytes,
-                file_name=f"Facturas_SSSalud_Adaptadas_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
-                mime="application/zip",
-                use_container_width=True,
-            )
-
-    # Contadores en tiempo real (se actualizan tras procesar ediciones de la tabla) y acciones rápidas
-    c_stat1, c_stat2, c_stat3, c_stat4, c_act1, c_act2 = st.columns([1, 1, 1, 1.3, 1.1, 1.1])
-    ph_stat1 = c_stat1.empty()
-    ph_stat2 = c_stat2.empty()
-    ph_stat3 = c_stat3.empty()
-    ph_stat4 = c_stat4.empty()
-
-    with c_act1:
-        if st.button("☑️ Seleccionar todas las Listas", use_container_width=True):
-            for f in procesadas:
-                f["seleccionada"] = (f.get("estado") == "Listo")
-            st.session_state["revision_editor_version"] += 1
-            st.rerun()
-    with c_act2:
-        if st.button("⬜ Desmarcar todas", use_container_width=True):
-            for f in procesadas:
-                f["seleccionada"] = False
-            st.session_state["revision_editor_version"] += 1
-            st.rerun()
+    # Espacio superior para métricas (Total en Revisión, Listas, Con Observaciones) y barra de acciones
+    metrics_ph = st.empty()
+    toolbar_ph = st.empty()
 
     # Construcción de la tabla interactiva (filas y columnas) para Revisión y Autorización
     def _texto_observacion(fila: Dict[str, Any]) -> str:
@@ -920,7 +932,6 @@ def render_paso_3_revision() -> None:
             "Cant.": int(fila.get("cantidad") or 1),
             "Dep.": bool(fila.get("dependencia", False)),
             "Observación": obs_actual,
-            "Quitar": False,
         })
         snapshots_previos.append({
             "estado": fila.get("estado"),
@@ -994,11 +1005,6 @@ def render_paso_3_revision() -> None:
                 help="Adicional por Dependencia (sólo códigos SSSalud habilitados).",
             ),
             "Observación": st.column_config.TextColumn("Observación", width="large"),
-            "Quitar": st.column_config.CheckboxColumn(
-                "Quitar",
-                width="small",
-                help="Marque para quitar esta factura del lote.",
-            ),
         },
     )
 
@@ -1017,16 +1023,12 @@ def render_paso_3_revision() -> None:
         except (TypeError, ValueError):
             return default
 
-    ids_a_eliminar = set()
     requiere_reset_editor = False
 
     for idx, fila in enumerate(procesadas):
         if idx >= len(edited_df):
             break
         row = edited_df.iloc[idx]
-        if _bool_celda(row["Quitar"]):
-            ids_a_eliminar.add(fila["id"])
-            continue
 
         prestador_edit = _str_celda(row["Prestador"]).strip()
         fila["prestador_nombre"] = prestador_edit or f"Prestador ({formatear_cuit_guiones(fila['cuit_emisor'])})"
@@ -1079,11 +1081,6 @@ def render_paso_3_revision() -> None:
 
         fila["seleccionada"] = _bool_celda(row["Aut."])
 
-    if ids_a_eliminar:
-        st.session_state["facturas_procesadas"] = [f for f in procesadas if f["id"] not in ids_a_eliminar]
-        st.session_state["revision_editor_version"] += 1
-        st.rerun()
-
     # Recalcular validaciones después de sincronizar
     recalcular_estados_lote(procesadas)
 
@@ -1110,78 +1107,66 @@ def render_paso_3_revision() -> None:
     elif cambio_estado_o_obs:
         st.rerun()
 
-    # Poblar métricas en tiempo real con valores recalculados
+    # Poblar métricas superiores y barra compacta de acciones sobre la tabla
     listas_post = [f for f in procesadas if f.get("estado") == "Listo"]
     con_error_post = [f for f in procesadas if f.get("estado") != "Listo"]
     seleccionadas_post = [f for f in procesadas if f.get("seleccionada") and f.get("estado") == "Listo"]
-    importe_seleccionado = sum(float(f.get("importe_total") or 0.0) for f in seleccionadas_post)
 
-    ph_stat1.metric("Total en Revisión", len(procesadas))
-    ph_stat2.metric("Listas (Válidas)", len(listas_post))
-    ph_stat3.metric("Con Observaciones", len(con_error_post))
-    ph_stat4.metric("Importe Seleccionado", formatear_moneda_ars(importe_seleccionado))
+    color_err = "#dc2626" if len(con_error_post) > 0 else "#64748b"
+    metrics_ph.markdown(
+        f"""
+        <div class="rev-kpi-grid">
+            <div class="rev-kpi-card">
+                <p class="rev-kpi-label">📋 Total en Revisión</p>
+                <p class="rev-kpi-val" style="color: #0f172a;">{len(procesadas)}</p>
+            </div>
+            <div class="rev-kpi-card" style="border-color: #bbf7d0; background: #f0fdf4;">
+                <p class="rev-kpi-label" style="color: #166534;">✅ Listas (Válidas)</p>
+                <p class="rev-kpi-val" style="color: #15803d;">{len(listas_post)}</p>
+            </div>
+            <div class="rev-kpi-card" style="border-color: {'#fecaca' if len(con_error_post) > 0 else '#e2e8f0'}; background: {'#fef2f2' if len(con_error_post) > 0 else '#ffffff'};">
+                <p class="rev-kpi-label" style="color: {color_err};">⚠️ Con Observaciones</p>
+                <p class="rev-kpi-val" style="color: {color_err};">{len(con_error_post)}</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # Visor rápido de PDF bajo demanda sin romper la vista tabular
-    with st.expander("👁️ Vista previa rápida de Factura PDF"):
-        opciones_preview = {
-            f"#{i + 1} · {f['archivo']} · {f['prestador_nombre']} ({formatear_moneda_ars(f['importe_total'])})": f
-            for i, f in enumerate(procesadas)
-        }
-        sel_preview = st.selectbox(
-            "Seleccione un comprobante para visualizar su primera página:",
-            options=list(opciones_preview.keys()),
-            key="selector_preview_pdf_paso3",
+    excel_bytes = generar_excel_revision(procesadas, rechazadas, cuit_inst)
+    with toolbar_ph.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center", gap="small"):
+        if st.button("☑️ Seleccionar todas", key="btn_sel_all_paso3"):
+            for f in procesadas:
+                f["seleccionada"] = (f.get("estado") == "Listo")
+            st.session_state["revision_editor_version"] += 1
+            st.rerun()
+        if st.button("⬜ Desmarcar todas", key="btn_desel_all_paso3"):
+            for f in procesadas:
+                f["seleccionada"] = False
+            st.session_state["revision_editor_version"] += 1
+            st.rerun()
+        st.download_button(
+            label="",
+            data=excel_bytes,
+            file_name=f"SAPI_Carga_Masiva_Facturas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="btn_excel_icon",
+            help="Exportar a Excel (.xlsx)",
         )
-        fila_prev = opciones_preview[sel_preview]
-        png_preview = renderizar_preview_pdf_png(fila_prev.get("pdf_bytes", b""), zoom=1.35)
-        if png_preview:
-            st.image(
-                png_preview,
-                caption=f"Página 1 · {fila_prev['archivo']} ({fila_prev['registro_identificador']})",
-                use_container_width=True,
+        with st.popover("ℹ️", help="Información de revisión"):
+            st.markdown(
+                "Verifique o complete el Período (AAAAMM), el DNI del Afiliado y la "
+                "Codificación del Nomenclador SSSalud (Códigos 1 al 99 o Sin Recupero)."
             )
-        else:
-            st.warning("No se pudo generar la vista previa gráfica del PDF.")
 
-    # Barra inferior de acciones y exportaciones (igual a SAPI Web)
+    # Barra inferior de acciones
     st.markdown("---")
-    col_nav_back, col_exp_csv, col_exp_xlsx, col_exp_zip, col_confirm = st.columns([1.05, 1.05, 1.15, 1.25, 1.5], gap="small")
+    col_nav_back, _, col_confirm = st.columns([1.0, 1.0, 1.4], gap="small")
 
     with col_nav_back:
         if st.button("← Volver a Informe", use_container_width=True):
             st.session_state["paso_actual"] = "informe"
             st.rerun()
-
-    with col_exp_csv:
-        csv_bytes = generar_csv_revision(procesadas)
-        st.download_button(
-            "📄 Exportar a CSV",
-            data=csv_bytes,
-            file_name=f"facturas_revision_{datetime.now().strftime('%Y-%m-%d')}.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-
-    with col_exp_xlsx:
-        excel_bytes = generar_excel_revision(procesadas, rechazadas, cuit_inst)
-        st.download_button(
-            "📊 Exportar a Excel (.xlsx)",
-            data=excel_bytes,
-            file_name=f"SAPI_Carga_Masiva_Facturas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
-
-    with col_exp_zip:
-        zip_actualizado = generar_zip_sssalud_adaptado(procesadas, rechazadas)
-        st.session_state["zip_sssalud_bytes"] = zip_actualizado
-        st.download_button(
-            "📦 ZIP SSSalud (1 pág.)",
-            data=zip_actualizado,
-            file_name=f"Facturas_SSSalud_Adaptadas_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
-            mime="application/zip",
-            use_container_width=True,
-        )
 
     with col_confirm:
         if st.button(
