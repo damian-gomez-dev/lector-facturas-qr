@@ -423,30 +423,40 @@ st.markdown(
     }
 
     /* Tarjetas métricas y barra compacta superior en Paso 3 */
-    .rev-kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.85rem;
-        margin-bottom: 0.85rem;
-    }
-    .rev-kpi-card {
+    .rev-kpi-bar {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 0.75rem 1rem;
+        padding: 0.7rem 1.25rem;
+        margin-bottom: 0.85rem;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
+    .rev-kpi-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+        padding: 0.15rem 1.25rem;
+    }
+    .rev-kpi-item:first-child {
+        padding-left: 0.25rem;
+    }
+    .rev-kpi-item:last-child {
+        padding-right: 0.25rem;
+    }
+    .rev-kpi-item + .rev-kpi-item {
+        border-left: 1px solid #e2e8f0;
     }
     .rev-kpi-label {
-        font-size: 0.82rem;
+        font-size: 0.84rem;
         font-weight: 600;
         color: #475569;
         margin: 0;
     }
     .rev-kpi-val {
-        font-size: 1.45rem;
+        font-size: 1.4rem;
         font-weight: 800;
         line-height: 1;
         margin: 0;
@@ -455,38 +465,46 @@ st.markdown(
     .st-key-btn_desel_all_paso3 button {
         font-size: 0.78rem !important;
         padding: 0.25rem 0.65rem !important;
-        min-height: 34px !important;
-        height: 34px !important;
+        min-height: 32px !important;
+        height: 32px !important;
         border-radius: 8px !important;
         white-space: nowrap !important;
     }
-    .st-key-btn_excel_icon button {
-        width: 34px !important;
-        min-width: 34px !important;
-        height: 34px !important;
-        min-height: 34px !important;
+    .st-key-btn_excel_icon button,
+    .st-key-btn_info_icon button {
+        width: 28px !important;
+        min-width: 28px !important;
+        height: 28px !important;
+        min-height: 28px !important;
         padding: 0 !important;
-        border-radius: 8px !important;
-        border: 1px solid #cbd5e1 !important;
-        background-color: #ffffff !important;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23185C37' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath fill='%2321A366' d='M14 2v6h6z'/%3E%3Cpath fill='%23107C41' d='M14 8h6v12a2 2 0 0 1-2 2h-4z'/%3E%3Crect x='2' y='6.5' width='11' height='11' rx='2' fill='%23107C41'/%3E%3Cpath fill='%23FFFFFF' d='M5.1 9.2h1.55l1.15 2.05 1.15-2.05h1.5l-1.8 2.8 1.9 2.9H8.95l-1.2-2.1-1.2 2.1H5.0l1.9-2.9z'/%3E%3C/svg%3E") !important;
+        border: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
         background-repeat: no-repeat !important;
         background-position: center !important;
-        background-size: 20px 20px !important;
+        background-size: 22px 22px !important;
+        transition: transform 0.15s ease, opacity 0.15s ease !important;
     }
-    .st-key-btn_excel_icon button:hover {
-        border-color: #107C41 !important;
-        background-color: #f0fdf4 !important;
+    .st-key-btn_excel_icon button {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23185C37' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath fill='%2321A366' d='M14 2v6h6z'/%3E%3Cpath fill='%23107C41' d='M14 8h6v12a2 2 0 0 1-2 2h-4z'/%3E%3Crect x='2' y='6.5' width='11' height='11' rx='2' fill='%23107C41'/%3E%3Cpath fill='%23FFFFFF' d='M5.1 9.2h1.55l1.15 2.05 1.15-2.05h1.5l-1.8 2.8 1.9 2.9H8.95l-1.2-2.1-1.2 2.1H5.0l1.9-2.9z'/%3E%3C/svg%3E") !important;
     }
-    .st-key-btn_excel_icon button > div {
+    .st-key-btn_info_icon button {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%232563EB'/%3E%3Crect x='11' y='10.5' width='2' height='6.5' rx='1' fill='%23FFFFFF'/%3E%3Ccircle cx='12' cy='7.5' r='1.2' fill='%23FFFFFF'/%3E%3C/svg%3E") !important;
+    }
+    .st-key-btn_excel_icon button:hover,
+    .st-key-btn_excel_icon button:focus,
+    .st-key-btn_excel_icon button:active,
+    .st-key-btn_info_icon button:hover,
+    .st-key-btn_info_icon button:focus,
+    .st-key-btn_info_icon button:active {
+        border: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        transform: scale(1.1);
+    }
+    .st-key-btn_excel_icon button > div,
+    .st-key-btn_info_icon button > div {
         display: none !important;
-    }
-    [data-testid="stPopover"] button {
-        min-height: 34px !important;
-        height: 34px !important;
-        border-radius: 8px !important;
-        padding: 0 0.55rem !important;
-        font-size: 0.85rem !important;
     }
 </style>
 """.replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
@@ -1115,16 +1133,16 @@ def render_paso_3_revision() -> None:
     color_err = "#dc2626" if len(con_error_post) > 0 else "#64748b"
     metrics_ph.markdown(
         f"""
-        <div class="rev-kpi-grid">
-            <div class="rev-kpi-card">
+        <div class="rev-kpi-bar">
+            <div class="rev-kpi-item">
                 <p class="rev-kpi-label">📋 Total en Revisión</p>
                 <p class="rev-kpi-val" style="color: #0f172a;">{len(procesadas)}</p>
             </div>
-            <div class="rev-kpi-card" style="border-color: #bbf7d0; background: #f0fdf4;">
+            <div class="rev-kpi-item">
                 <p class="rev-kpi-label" style="color: #166534;">✅ Listas (Válidas)</p>
                 <p class="rev-kpi-val" style="color: #15803d;">{len(listas_post)}</p>
             </div>
-            <div class="rev-kpi-card" style="border-color: {'#fecaca' if len(con_error_post) > 0 else '#e2e8f0'}; background: {'#fef2f2' if len(con_error_post) > 0 else '#ffffff'};">
+            <div class="rev-kpi-item">
                 <p class="rev-kpi-label" style="color: {color_err};">⚠️ Con Observaciones</p>
                 <p class="rev-kpi-val" style="color: {color_err};">{len(con_error_post)}</p>
             </div>
@@ -1151,13 +1169,18 @@ def render_paso_3_revision() -> None:
             file_name=f"SAPI_Carga_Masiva_Facturas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="btn_excel_icon",
+            type="tertiary",
             help="Exportar a Excel (.xlsx)",
         )
-        with st.popover("ℹ️", help="Información de revisión"):
-            st.markdown(
+        st.button(
+            label="",
+            key="btn_info_icon",
+            type="tertiary",
+            help=(
                 "Verifique o complete el Período (AAAAMM), el DNI del Afiliado y la "
                 "Codificación del Nomenclador SSSalud (Códigos 1 al 99 o Sin Recupero)."
-            )
+            ),
+        )
 
     # Barra inferior de acciones
     st.markdown("---")
