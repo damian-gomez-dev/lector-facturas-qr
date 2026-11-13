@@ -646,15 +646,15 @@ def render_cabecera_y_stepper() -> None:
             <div>
                 <h1 class="sapi-header-title">
                     {_svg_inline("receipt", "#93c5fd", 26)}
-                    <span>Carga Masiva de Facturas Digitales (QR AFIP/ARCA)</span>
+                    <span>Carga Masiva de Facturas Digitales</span>
                 </h1>
                 <p class="sapi-header-sub">
-                    Módulo Contable SAPI Web · Decodificación fiscal QR, adaptación SSSalud (1 página) y codificación Nomenclador de Discapacidad
+                    Módulo Contable SAPI Web · Decodificación fiscal QR, adaptación SSSalud y codificación Nomenclador de Discapacidad
                 </p>
             </div>
             <div class="sapi-badge-demo">
                 {_svg_inline("bolt", "#fde047", 14)}
-                <span>VERSIÓN DEMO · MÁX. {MAX_PDFS_POR_TANDA_DEMO} PDFs POR TANDA</span>
+                <span>VERSIÓN DEMO · MÁX. {MAX_PDFS_POR_TANDA_DEMO} PDFs</span>
             </div>
         </div>
         """,
@@ -721,14 +721,14 @@ def render_cabecera_y_stepper() -> None:
                 <div class="sapi-step-num">{icono_1}</div>
                 <div>
                     <p class="sapi-step-label">1. Selección de PDFs</p>
-                    <p class="sapi-step-desc">Carga de hasta {MAX_PDFS_POR_TANDA_DEMO} facturas PDF por tanda</p>
+                    <p class="sapi-step-desc">Carga de hasta {MAX_PDFS_POR_TANDA_DEMO} facturas PDF</p>
                 </div>
             </div>
             <div class="sapi-step {clase_2}">
                 <div class="sapi-step-num">{icono_2}</div>
                 <div>
                     <p class="sapi-step-label">2. Informe de Validación</p>
-                    <p class="sapi-step-desc">Escaneo QR y adaptación SSSalud (1 página)</p>
+                    <p class="sapi-step-desc">Escaneo QR y adaptación SSSalud</p>
                 </div>
             </div>
             <div class="sapi-step {clase_3}">
