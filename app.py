@@ -721,10 +721,9 @@ def render_paso_2_informe() -> None:
                 "Archivo": f["archivo"],
                 "Estado": "Procesado",
                 "Prestador": f"{f['prestador_nombre']} ({formatear_cuit_guiones(f['cuit_emisor'])})",
-                "Venta-Comp": f"{pto_vta}-{nro_comp}",
+                "Comp": f"{pto_vta}-{nro_comp}",
                 "Tipo": f["tipo_comprobante_etiqueta"],
                 "Importe": formatear_moneda_ars(f["importe_total"]),
-                "Detalle": "—",
             },
         ))
 
@@ -736,10 +735,9 @@ def render_paso_2_informe() -> None:
                 "Archivo": r["archivo"],
                 "Estado": "No procesado",
                 "Prestador": formatear_cuit_guiones(cuit_em) if cuit_em else "—",
-                "Venta-Comp": "—",
+                "Comp": "—",
                 "Tipo": etiquetas_err.get(r.get("tipo_error", "sin_qr"), "Error"),
                 "Importe": "—",
-                "Detalle": r["motivo"],
             },
         ))
 
