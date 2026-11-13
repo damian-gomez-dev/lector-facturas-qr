@@ -441,6 +441,7 @@ def inicializar_estado() -> None:
         "ultimo_cuit_notificado": "",
         "archivos_seleccionados": [],
         "toast_limite_pendiente": None,
+        "toast_informe_pendiente": False,
         "facturas_procesadas": [],
         "facturas_rechazadas": [],
         "descargar_formato_sssalud": False,
@@ -461,6 +462,7 @@ def reiniciar_proceso_completo() -> None:
     st.session_state["paso_actual"] = "seleccion"
     st.session_state["archivos_seleccionados"] = []
     st.session_state["toast_limite_pendiente"] = None
+    st.session_state["toast_informe_pendiente"] = False
     st.session_state["facturas_procesadas"] = []
     st.session_state["facturas_rechazadas"] = []
     st.session_state["zip_sssalud_bytes"] = None
@@ -672,6 +674,7 @@ def render_paso_1_seleccion() -> None:
                     resultado_lote["rechazadas"],
                 )
                 st.session_state["lote_confirmado"] = False
+                st.session_state["toast_informe_pendiente"] = True
                 st.session_state["paso_actual"] = "informe"
                 st.rerun()
 
@@ -679,129 +682,101 @@ def render_paso_1_seleccion() -> None:
 # ==============================================================================
 # PASO 2: INFORME DE VALIDACIÓN
 # ==============================================================================
+def _indice_original_lote(registro_id: Any) -> int:
+    partes = str(registro_id or "").split("_")
+    if len(partes) >= 2 and partes[1].isdigit():
+        return int(partes[1])
+    return 9999
+
+
 def render_paso_2_informe() -> None:
     procesadas: List[Dict[str, Any]] = st.session_state["facturas_procesadas"]
     rechazadas: List[Dict[str, Any]] = st.session_state["facturas_rechazadas"]
     cuit_inst = st.session_state.get("cuit_institucional_validado", "")
 
-    importe_total_proc = sum(float(f.get("importe_total") or 0.0) for f in procesadas)
+    if st.session_state.pop("toast_informe_pendiente", False):
+        st.toast(
+            f"Facturas Procesadas con Éxito: {len(procesadas)} · QR AFIP/ARCA decodificado",
+            icon="✅",
+            duration="long",
+        )
+        msg_rech = f"Facturas No Procesadas / Rechazadas: {len(rechazadas)}"
+        if cuit_inst:
+            msg_rech += f" · CUIT {formatear_cuit_guiones(cuit_inst)}"
+        st.toast(msg_rech, icon="❌", duration="long")
 
-    # Tarjetas Resumen de Procesadas vs Rechazadas (igual a SAPI Web)
-    st.markdown(
-        f"""
-        <div class="kpi-grid">
-            <div class="kpi-box-ok">
-                <div>
-                    <p style="margin:0; font-size:0.95rem; font-weight:700; color:#166534;">
-                        ✅ Facturas Procesadas con Éxito
-                    </p>
-                    <p style="margin:0.2rem 0 0 0; font-size:0.82rem; color:#15803d;">
-                        QR AFIP/ARCA decodificado · Importe acumulado: <b>{formatear_moneda_ars(importe_total_proc)}</b>
-                    </p>
-                </div>
-                <div class="kpi-num-ok">{len(procesadas)}</div>
-            </div>
-            <div class="kpi-box-err">
-                <div>
-                    <p style="margin:0; font-size:0.95rem; font-weight:700; color:#991b1b;">
-                        ❌ Facturas No Procesadas / Rechazadas
-                    </p>
-                    <p style="margin:0.2rem 0 0 0; font-size:0.82rem; color:#b91c1c;">
-                        {"CUIT Institucional verificado: " + formatear_cuit_guiones(cuit_inst) if cuit_inst else "Comprobantes sin QR válido o Notas de Crédito"}
-                    </p>
-                </div>
-                <div class="kpi-num-err">{len(rechazadas)}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    etiquetas_err = {
+        "nota_credito": "🚫 Nota de Crédito",
+        "cuit_invalido": "🏛️ Entidad No Coincide",
+        "sin_qr": "🔍 Sin QR / Ilegible",
+    }
 
-    col_proc, col_rech = st.columns(2, gap="large")
+    registros_unificados: List[tuple[int, Dict[str, Any]]] = []
+    for f in procesadas:
+        pto_vta = int(f.get("punto_venta") or 0)
+        nro_comp = int(f.get("numero_comprobante") or 0)
+        registros_unificados.append((
+            _indice_original_lote(f.get("id")),
+            {
+                "Archivo": f["archivo"],
+                "Estado": "Procesado",
+                "Prestador": f"{f['prestador_nombre']} ({formatear_cuit_guiones(f['cuit_emisor'])})",
+                "Venta-Comp": f"{pto_vta}-{nro_comp}",
+                "Tipo": f["tipo_comprobante_etiqueta"],
+                "Importe": formatear_moneda_ars(f["importe_total"]),
+                "Detalle": "—",
+            },
+        ))
 
-    # Columna 1: Tabla de Facturas Procesadas
-    with col_proc:
-        st.markdown("#### ✅ Facturas Procesadas")
-        if procesadas:
-            df_proc = pd.DataFrame([
-                {
-                    "Archivo": f["archivo"],
-                    "Prestador": f"{f['prestador_nombre']} ({formatear_cuit_guiones(f['cuit_emisor'])})",
-                    "Comprobante SSSalud": f["registro_identificador"],
-                    "Tipo": f["tipo_comprobante_etiqueta"],
-                    "CAE": f["cae"],
-                    "Emisión": f["fecha_emision_ddmmaaaa"],
-                    "Importe": formatear_moneda_ars(f["importe_total"]),
-                }
-                for f in procesadas
-            ])
-            st.dataframe(df_proc, use_container_width=True, hide_index=True, height=290)
-        else:
-            st.warning("Ninguna factura pudo ser procesada con éxito en este lote.")
+    for r in rechazadas:
+        cuit_em = r.get("cuit_emisor")
+        registros_unificados.append((
+            _indice_original_lote(r.get("id")),
+            {
+                "Archivo": r["archivo"],
+                "Estado": "No procesado",
+                "Prestador": formatear_cuit_guiones(cuit_em) if cuit_em else "—",
+                "Venta-Comp": "—",
+                "Tipo": etiquetas_err.get(r.get("tipo_error", "sin_qr"), "Error"),
+                "Importe": "—",
+                "Detalle": r["motivo"],
+            },
+        ))
 
-    # Columna 2: Tabla de Facturas No Procesadas / Rechazadas
-    with col_rech:
-        st.markdown("#### ❌ Facturas No Procesadas")
-        if rechazadas:
-            etiquetas_err = {
-                "nota_credito": "🚫 Nota de Crédito",
-                "cuit_invalido": "🏛️ Entidad No Coincide",
-                "sin_qr": "🔍 Sin QR / Ilegible",
-            }
-            df_rech = pd.DataFrame([
-                {
-                    "Archivo": r["archivo"],
-                    "Clasificación": etiquetas_err.get(r.get("tipo_error", "sin_qr"), "Error"),
-                    "Motivo del Rechazo": r["motivo"],
-                }
-                for r in rechazadas
-            ])
-            st.dataframe(df_rech, use_container_width=True, hide_index=True, height=290)
-        else:
-            st.success("🎉 ¡Excelente! Todas las facturas de la tanda fueron validadas sin rechazos.")
+    registros_unificados.sort(key=lambda item: item[0])
+    filas_tabla = [fila for _, fila in registros_unificados]
 
-    # Opción SSSalud: Adaptar facturas a 1 página y descargar en 3 carpetas (igual a SAPI Web)
-    st.markdown("---")
-    with st.container():
-        col_chk, col_dl_zip = st.columns([1.8, 1.2], gap="medium")
-        with col_chk:
-            descargar_sssalud = st.checkbox(
-                "📦 Descargar las facturas adaptadas en formato de la SSSalud (1 página · 3 carpetas)",
-                value=st.session_state["descargar_formato_sssalud"],
-                help=(
-                    "Adapta automáticamente cada PDF dejando únicamente la primera página y los empaqueta en un archivo .ZIP "
-                    "dividido en: 'Facturas Procesadas' (renombradas como CUIT_TIPO_PTO_NRO.pdf), "
-                    "'No Procesadas - CUIT No Corresponde a la Entidad' y 'No Procesadas - Sin QR'."
-                ),
-            )
-            st.session_state["descargar_formato_sssalud"] = descargar_sssalud
-            st.caption(
-                "Recorta cada PDF a **1 sola página** y los clasifica en **3 carpetas**: "
-                "`Facturas Procesadas` (`CUIT_TIPO_PTO_NRO.pdf`), "
-                "`No Procesadas - CUIT No Corresponde a la Entidad` y `No Procesadas - Sin QR`."
-            )
+    if filas_tabla:
+        df_informe = pd.DataFrame(filas_tabla)
+        alto_tabla = min(400, max(220, 42 + 35 * len(filas_tabla)))
+        st.dataframe(df_informe, use_container_width=True, hide_index=True, height=alto_tabla)
+    else:
+        st.warning("No se encontraron comprobantes para informar en este lote.")
 
-        with col_dl_zip:
-            zip_bytes = st.session_state.get("zip_sssalud_bytes")
-            if not zip_bytes:
-                zip_bytes = generar_zip_sssalud_adaptado(procesadas, rechazadas)
-                st.session_state["zip_sssalud_bytes"] = zip_bytes
-
-            st.download_button(
-                label="⬇️ Descargar Facturas_SSSalud_Adaptadas.zip (1 pág.)",
-                data=zip_bytes,
-                file_name=f"Facturas_SSSalud_Adaptadas_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
-                mime="application/zip",
-                use_container_width=True,
-                type="secondary",
-            )
+    zip_bytes = st.session_state.get("zip_sssalud_bytes")
+    if not zip_bytes:
+        zip_bytes = generar_zip_sssalud_adaptado(procesadas, rechazadas)
+        st.session_state["zip_sssalud_bytes"] = zip_bytes
 
     st.markdown("---")
-    col_back, col_spacer, col_next = st.columns([1.1, 0.8, 1.4])
+    col_back, col_zip, col_next = st.columns([1.0, 1.15, 1.25], gap="medium")
     with col_back:
         if st.button("← Seleccionar otros archivos", use_container_width=True):
             reiniciar_proceso_completo()
             st.rerun()
+
+    with col_zip:
+        st.download_button(
+            label="📦 Descargar ZIP SSSalud (1 pág.)",
+            data=zip_bytes,
+            file_name=f"Facturas_SSSalud_Adaptadas_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
+            mime="application/zip",
+            use_container_width=True,
+            type="secondary",
+            help=(
+                "Adapta cada PDF dejando únicamente la primera página y los clasifica en 3 carpetas SSSalud."
+            ),
+        )
 
     with col_next:
         if st.button(
