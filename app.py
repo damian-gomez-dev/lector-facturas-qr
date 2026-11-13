@@ -290,6 +290,36 @@ st.markdown(
     [data-testid="stFileUploader"] {
         width: 100% !important;
     }
+    [data-testid="stFileUploaderDropzone"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        height: auto !important;
+        min-height: 150px !important;
+        padding: 1.5rem 1.25rem !important;
+        gap: 0.75rem !important;
+        border-radius: 14px !important;
+        margin: 0 auto !important;
+    }
+    [data-testid="stFileUploaderDropzoneInstructions"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        gap: 0.4rem !important;
+    }
+    [data-testid="stFileUploaderDropzoneInstructions"] > div {
+        align-items: center !important;
+        text-align: center !important;
+    }
+    [data-testid="stFileUploaderDropzoneInstructions"] span {
+        text-align: center !important;
+    }
     [data-testid="stFileUploader"] label,
     [data-testid="stTextInput"] label {
         display: flex !important;
@@ -300,6 +330,17 @@ st.markdown(
     }
     [data-testid="stTextInput"] input {
         text-align: center !important;
+    }
+
+    /* Notificaciones emergentes (toast) en esquina superior derecha */
+    [data-testid="stToastContainer"] {
+        z-index: 999999 !important;
+    }
+    [data-testid="stToast"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.14) !important;
     }
 </style>
 """,
@@ -315,6 +356,7 @@ def inicializar_estado() -> None:
         "paso_actual": "seleccion",  # 'seleccion' | 'informe' | 'revision'
         "cuit_institucional_input": "",
         "cuit_institucional_validado": "",
+        "ultimo_cuit_notificado": "",
         "facturas_procesadas": [],
         "facturas_rechazadas": [],
         "descargar_formato_sssalud": False,
@@ -378,12 +420,15 @@ def render_cabecera_y_stepper() -> None:
         disabled=(paso != "seleccion"),
     )
     st.session_state["cuit_institucional_input"] = cuit_raw
+    cuit_limpio_input = cuit_raw.strip()
     cuit_valido, _, msg_cuit = validar_formato_cuit_opcional(cuit_raw)
-    if cuit_raw.strip():
-        if cuit_valido:
-            st.success(f"✅ {msg_cuit}")
-        else:
-            st.error(f"⚠️ {msg_cuit}")
+    if cuit_limpio_input != st.session_state.get("ultimo_cuit_notificado", ""):
+        st.session_state["ultimo_cuit_notificado"] = cuit_limpio_input
+        if cuit_limpio_input:
+            if cuit_valido:
+                st.toast(msg_cuit, icon="✅")
+            else:
+                st.toast(msg_cuit, icon="⚠️", duration="long")
 
     clase_1 = "active" if paso == "seleccion" else "done"
     clase_2 = "active" if paso == "informe" else ("done" if paso == "revision" else "")
@@ -494,6 +539,11 @@ def render_paso_1_seleccion() -> None:
                 type="primary",
                 use_container_width=True,
                 disabled=boton_deshabilitado,
+                help=(
+                    "Corrija el CUIT Institucional (11 dígitos) o déjelo vacío para continuar."
+                    if boton_deshabilitado
+                    else None
+                ),
             ):
                 barra = st.progress(0, text="Iniciando lectura multicapa de códigos QR AFIP/ARCA...")
                 lote_tuplas = [(f.name, f.getvalue()) for f in archivos_activos]
