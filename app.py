@@ -275,18 +275,7 @@ st.markdown(
         font-family: monospace;
     }
 
-    /* Centrado y simetría de tarjetas y controles en Paso 1 */
-    .sapi-card-centered {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 1.25rem 1.5rem;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-        margin-bottom: 0.9rem;
-        text-align: center;
-        width: 100%;
-        box-sizing: border-box;
-    }
+    /* Centrado y unificación del cuadro de carga en Paso 1 */
     [data-testid="stFileUploader"] {
         width: 100% !important;
     }
@@ -297,11 +286,20 @@ st.markdown(
         justify-content: center !important;
         text-align: center !important;
         height: auto !important;
-        min-height: 150px !important;
-        padding: 1.5rem 1.25rem !important;
-        gap: 0.75rem !important;
+        min-height: 175px !important;
+        padding: 1.75rem 1.5rem !important;
+        gap: 0.95rem !important;
+        background: #ffffff !important;
+        border: 1.5px dashed #cbd5e1 !important;
         border-radius: 14px !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
         margin: 0 auto !important;
+        transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: #2563eb !important;
+        background: #f8fafc !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08) !important;
     }
     [data-testid="stFileUploaderDropzoneInstructions"] {
         display: flex !important;
@@ -313,12 +311,47 @@ st.markdown(
         width: 100% !important;
         gap: 0.4rem !important;
     }
+    [data-testid="stFileUploaderDropzoneInstructions"] > span,
     [data-testid="stFileUploaderDropzoneInstructions"] > div {
-        align-items: center !important;
-        text-align: center !important;
+        display: none !important;
     }
-    [data-testid="stFileUploaderDropzoneInstructions"] span {
-        text-align: center !important;
+    [data-testid="stFileUploaderDropzoneInstructions"]::before {
+        content: "📂 Selección de Facturas Digitales en PDF";
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.35;
+        text-align: center;
+    }
+    [data-testid="stFileUploaderDropzoneInstructions"]::after {
+        content: "Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.\\ALímite de versión Demo: hasta __MAX_PDFS__ archivos PDF por tanda (máx. 15 MB por archivo).";
+        display: block;
+        white-space: pre-line;
+        font-size: 0.85rem;
+        color: #64748b;
+        line-height: 1.5;
+        text-align: center;
+    }
+    [data-testid="stFileUploaderDropzone"] button {
+        font-size: 0 !important;
+        padding: 0.55rem 1.25rem !important;
+        border-radius: 10px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stFileUploaderDropzone"] button:hover {
+        border-color: #2563eb !important;
+        color: #1d4ed8 !important;
+        background-color: #eff6ff !important;
+    }
+    [data-testid="stFileUploaderDropzone"] button::after {
+        content: "📎 Seleccionar archivos PDF";
+        font-size: 0.875rem !important;
+        line-height: 1.2 !important;
     }
     [data-testid="stFileUploader"] label,
     [data-testid="stTextInput"] label {
@@ -343,7 +376,7 @@ st.markdown(
         box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.14) !important;
     }
 </style>
-""",
+""".replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
     unsafe_allow_html=True,
 )
 
@@ -474,19 +507,6 @@ def render_cabecera_y_stepper() -> None:
 def render_paso_1_seleccion() -> None:
     cuit_raw = st.session_state.get("cuit_institucional_input", "")
     cuit_valido, cuit_limpio, _ = validar_formato_cuit_opcional(cuit_raw)
-
-    st.markdown(
-        f"""
-        <div class="sapi-card-centered">
-            <p class="sapi-card-title" style="text-align: center;">📂 Selección de Facturas Digitales en PDF</p>
-            <p class="sapi-card-sub" style="text-align: center; margin-bottom: 0;">
-                Seleccione o arrastre los archivos PDF de las facturas electrónicas AFIP/ARCA.<br>
-                <b>Límite de versión Demo: hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF por tanda</b> (máx. 15 MB por archivo).
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
     uploaded_files = st.file_uploader(
         f"Seleccione hasta {MAX_PDFS_POR_TANDA_DEMO} archivos PDF",

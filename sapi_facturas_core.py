@@ -1534,7 +1534,7 @@ def validar_formato_cuit_opcional(cuit_input: Optional[str]) -> Tuple[bool, str,
     return (
         True,
         limpio,
-        f"Verificación institucional activa para CUIT {formatear_cuit_guiones(limpio)}.",
+        f"Verificación activa para CUIT {formatear_cuit_guiones(limpio)}.",
     )
 
 
