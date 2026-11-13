@@ -23,7 +23,7 @@ from sapi_facturas_core import (
 # CONFIGURACIÓN DE PÁGINA Y ESTILOS VISUALES (ESTÉTICA SAPI WEB)
 # ==============================================================================
 st.set_page_config(
-    page_title="SAPI Web · Carga Masiva de Facturas Digitales (QR)",
+    page_title="Carga Masiva de Facturas Digitales",
     page_icon=":material/receipt_long:",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1283,7 +1283,7 @@ def render_paso_3_revision() -> None:
         st.download_button(
             label="",
             data=excel_bytes,
-            file_name=f"SAPI_Carga_Masiva_Facturas_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            file_name="Informe Excel.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="btn_excel_icon",
             type="tertiary",
