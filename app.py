@@ -1,4 +1,5 @@
 import html
+import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -539,6 +540,97 @@ st.markdown(
     [data-testid="stTextInput"] [data-testid="stIconMaterial"] {
         color: #475569 !important;
     }
+
+    /* Calculadora lateral de ahorro de tiempo (oculta por defecto en sidebar) */
+    .sapi-sb-title {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.25rem 0;
+    }
+    .sapi-sb-sub {
+        font-size: 0.8rem;
+        color: #64748b;
+        line-height: 1.4;
+        margin: 0 0 0.85rem 0;
+    }
+    .sapi-sb-hero {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin: 0.75rem 0;
+    }
+    .sapi-sb-hero-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #166534;
+        margin: 0 0 0.2rem 0;
+    }
+    .sapi-sb-hero-val {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #15803d;
+        line-height: 1.15;
+        margin: 0 0 0.2rem 0;
+    }
+    .sapi-sb-hero-meta {
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #15803d;
+        margin: 0;
+    }
+    .sapi-sb-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.85rem 0.95rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+    .sapi-sb-bar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 0.8rem;
+        margin-bottom: 0.28rem;
+    }
+    .sapi-sb-bar-name {
+        font-weight: 600;
+        color: #334155;
+    }
+    .sapi-sb-bar-val {
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .sapi-sb-track {
+        width: 100%;
+        height: 9px;
+        background: #f1f5f9;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+    .sapi-sb-fill-manual {
+        height: 100%;
+        width: 100%;
+        background: #ef4444;
+        border-radius: 999px;
+    }
+    .sapi-sb-fill-sys {
+        height: 100%;
+        background: #2563eb;
+        border-radius: 999px;
+    }
+    .sapi-sb-foot {
+        font-size: 0.74rem;
+        color: #64748b;
+        line-height: 1.35;
+        margin: 0.65rem 0 0 0;
+    }
 </style>
 """.replace("__MAX_PDFS__", str(MAX_PDFS_POR_TANDA_DEMO)),
     unsafe_allow_html=True,
@@ -565,6 +657,7 @@ def inicializar_estado() -> None:
         "facturas_rechazadas": [],
         "descargar_formato_sssalud": False,
         "zip_sssalud_bytes": None,
+        "tiempo_real_por_factura_seg": None,
         "uploader_key": 0,
         "revision_editor_version": 0,
     }
@@ -623,6 +716,10 @@ _SVG_PATHS: Dict[str, str] = {
         '<path fill="currentColor" d="M12 2.5L1.8 20.5a1 1 0 0 0 .87 1.5h18.66a1 1 0 0 0 .87-1.5L12 2.5z"/>'
         '<path stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" d="M12 9v5.2"/>'
         '<circle cx="12" cy="17.6" r="1.2" fill="#ffffff"/>'
+    ),
+    "clock": (
+        '<circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/>'
+        '<path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3.5 2"/>'
     ),
 }
 
@@ -854,6 +951,7 @@ def render_paso_1_seleccion() -> None:
                     porc = int((actual / max(total, 1)) * 100)
                     _render_modal_progreso(f"Escaneando ({actual}/{total}): {nombre}...", porc)
 
+                t_scan_ini = time.perf_counter()
                 resultado_lote = escanear_lote_pdfs(
                     archivos_pdf=lote_tuplas,
                     cuit_institucional=cuit_limpio if cuit_valido else "",
@@ -861,14 +959,20 @@ def render_paso_1_seleccion() -> None:
                 )
                 modal_progreso.empty()
 
+                zip_adaptado = generar_zip_sssalud_adaptado(
+                    resultado_lote["procesadas"],
+                    resultado_lote["rechazadas"],
+                )
+                t_scan_fin = time.perf_counter()
+                n_escaneadas = max(1, int(resultado_lote.get("total_escaneadas") or len(lote_tuplas)))
+                st.session_state["tiempo_real_por_factura_seg"] = max(0.01, (t_scan_fin - t_scan_ini) / n_escaneadas)
+                st.session_state["slider_ahorro_facturas"] = min(500, max(1, n_escaneadas))
+
                 st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
                 st.session_state["rnos_institucional_validado"] = rnos_limpio if rnos_valido else ""
                 st.session_state["facturas_procesadas"] = resultado_lote["procesadas"]
                 st.session_state["facturas_rechazadas"] = resultado_lote["rechazadas"]
-                st.session_state["zip_sssalud_bytes"] = generar_zip_sssalud_adaptado(
-                    resultado_lote["procesadas"],
-                    resultado_lote["rechazadas"],
-                )
+                st.session_state["zip_sssalud_bytes"] = zip_adaptado
                 st.session_state["toast_informe_pendiente"] = True
                 st.session_state["paso_actual"] = "informe"
                 st.rerun()
@@ -1343,9 +1447,111 @@ def render_paso_3_revision() -> None:
         )
 
 
+def _formatear_duracion_ahorro(segundos: float) -> str:
+    seg = max(0.0, float(segundos))
+    if seg < 60:
+        return f"{seg:.2f} s" if seg < 10 else f"{seg:.1f} s"
+    if seg < 3600:
+        mins = int(seg // 60)
+        rem_s = int(round(seg - mins * 60))
+        if rem_s == 60:
+            mins += 1
+            rem_s = 0
+        if mins >= 60:
+            return "1 h"
+        return f"{mins} min" if rem_s == 0 else f"{mins} min {rem_s} s"
+    total_min = int(round(seg / 60.0))
+    horas = total_min // 60
+    mins = total_min % 60
+    return f"{horas} h" if mins == 0 else f"{horas} h {mins} min"
+
+
+def render_sidebar_ahorro_tiempo() -> None:
+    """Barra lateral colapsable con comparativa interactiva de tiempo ahorrado."""
+    SEG_MANUAL_POR_FACTURA = 120.0  # 2 minutos manuales por factura
+    SEG_SISTEMA_ESTIMADO = 0.50     # ~0.5 s por factura (QR AFIP + extracción y adaptación PDF)
+
+    tiempo_medido = st.session_state.get("tiempo_real_por_factura_seg")
+    seg_sistema_unit = float(tiempo_medido) if tiempo_medido else SEG_SISTEMA_ESTIMADO
+    es_medido = tiempo_medido is not None
+
+    with st.sidebar:
+        st.markdown(
+            f"""
+            <p class="sapi-sb-title">
+                {_svg_inline("clock", "#2563eb", 18)}
+                <span>Ahorro de Tiempo</span>
+            </p>
+            <p class="sapi-sb-sub">
+                Comparativa entre carga manual (<b>2 min/factura</b>) y carga sistematizada por QR.
+            </p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if "slider_ahorro_facturas" not in st.session_state:
+            st.session_state["slider_ahorro_facturas"] = 15
+
+        cantidad = st.slider(
+            "Cantidad de facturas",
+            min_value=1,
+            max_value=500,
+            step=1,
+            key="slider_ahorro_facturas",
+        )
+
+        total_manual_seg = cantidad * SEG_MANUAL_POR_FACTURA
+        total_sistema_seg = cantidad * seg_sistema_unit
+        ahorro_seg = max(0.0, total_manual_seg - total_sistema_seg)
+        pct_ahorro = (ahorro_seg / total_manual_seg * 100.0) if total_manual_seg > 0 else 0.0
+        ancho_sistema_pct = min(100.0, max(1.5, (total_sistema_seg / total_manual_seg) * 100.0)) if total_manual_seg > 0 else 1.5
+
+        txt_ahorro = _formatear_duracion_ahorro(ahorro_seg)
+        txt_manual = _formatear_duracion_ahorro(total_manual_seg)
+        txt_sistema = _formatear_duracion_ahorro(total_sistema_seg)
+        nota_base = (
+            f"Base sistema: {seg_sistema_unit:.2f} s/fact. (medido en tu última tanda)."
+            if es_medido
+            else f"Base sistema: ~{seg_sistema_unit:.2f} s/fact. (lectura QR + extracción PDF)."
+        )
+
+        st.markdown(
+            f"""
+            <div class="sapi-sb-hero">
+                <p class="sapi-sb-hero-label">Tiempo ahorrado</p>
+                <p class="sapi-sb-hero-val">{txt_ahorro}</p>
+                <p class="sapi-sb-hero-meta">{pct_ahorro:.1f}% menos tiempo · {cantidad} factura(s)</p>
+            </div>
+            <div class="sapi-sb-card">
+                <div>
+                    <div class="sapi-sb-bar-row">
+                        <span class="sapi-sb-bar-name">Carga manual (2 min/fact.)</span>
+                        <span class="sapi-sb-bar-val">{txt_manual}</span>
+                    </div>
+                    <div class="sapi-sb-track">
+                        <div class="sapi-sb-fill-manual"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="sapi-sb-bar-row">
+                        <span class="sapi-sb-bar-name">Sistema masivo QR</span>
+                        <span class="sapi-sb-bar-val" style="color: #1d4ed8;">{txt_sistema}</span>
+                    </div>
+                    <div class="sapi-sb-track">
+                        <div class="sapi-sb-fill-sys" style="width: {ancho_sistema_pct:.2f}%;"></div>
+                    </div>
+                </div>
+            </div>
+            <p class="sapi-sb-foot">{nota_base}</p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 # ==============================================================================
 # EJECUCIÓN DEL FLUJO EN 3 PASOS
 # ==============================================================================
+render_sidebar_ahorro_tiempo()
 render_cabecera_y_stepper()
 
 if st.session_state["paso_actual"] == "seleccion":
