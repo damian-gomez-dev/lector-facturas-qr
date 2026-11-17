@@ -563,6 +563,7 @@ st.markdown(
         border-radius: 12px;
         padding: 0.85rem 1rem;
         margin: 0.75rem 0;
+        text-align: center;
     }
     .sapi-sb-hero-label {
         font-size: 0.78rem;
@@ -575,13 +576,19 @@ st.markdown(
         font-weight: 800;
         color: #15803d;
         line-height: 1.15;
-        margin: 0 0 0.2rem 0;
+        margin: 0 0 0.25rem 0;
     }
     .sapi-sb-hero-meta {
         font-size: 0.76rem;
         font-weight: 600;
         color: #15803d;
         margin: 0;
+    }
+    .sapi-sb-hero-qty {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #166534;
+        margin: 0.15rem 0 0 0;
     }
     .sapi-sb-card {
         background: #ffffff;
@@ -966,7 +973,7 @@ def render_paso_1_seleccion() -> None:
                 t_scan_fin = time.perf_counter()
                 n_escaneadas = max(1, int(resultado_lote.get("total_escaneadas") or len(lote_tuplas)))
                 st.session_state["tiempo_real_por_factura_seg"] = max(0.01, (t_scan_fin - t_scan_ini) / n_escaneadas)
-                st.session_state["slider_ahorro_facturas"] = min(500, max(1, n_escaneadas))
+                st.session_state["slider_ahorro_facturas"] = min(5000, max(1, n_escaneadas))
 
                 st.session_state["cuit_institucional_validado"] = cuit_limpio if cuit_valido else ""
                 st.session_state["rnos_institucional_validado"] = rnos_limpio if rnos_valido else ""
@@ -1483,7 +1490,7 @@ def render_sidebar_ahorro_tiempo() -> None:
                 <span>Ahorro de Tiempo</span>
             </p>
             <p class="sapi-sb-sub">
-                Comparativa entre carga manual (<b>2 min/factura</b>) y carga sistematizada por QR.
+                Comparativa entre carga manual vs carga sistematizada por QR.
             </p>
             """,
             unsafe_allow_html=True,
@@ -1495,7 +1502,7 @@ def render_sidebar_ahorro_tiempo() -> None:
         cantidad = st.slider(
             "Cantidad de facturas",
             min_value=1,
-            max_value=500,
+            max_value=5000,
             step=1,
             key="slider_ahorro_facturas",
         )
@@ -1512,7 +1519,7 @@ def render_sidebar_ahorro_tiempo() -> None:
         nota_base = (
             f"Base sistema: {seg_sistema_unit:.2f} s/fact. (medido en tu última tanda)."
             if es_medido
-            else f"Base sistema: ~{seg_sistema_unit:.2f} s/fact. (lectura QR + extracción PDF)."
+            else f"Base sistema: ~{seg_sistema_unit:.2f} s/fact. (Lectura QR + Lectura de DNI, Periodo y Cantidad de sesiones)."
         )
 
         st.markdown(
@@ -1520,9 +1527,19 @@ def render_sidebar_ahorro_tiempo() -> None:
             <div class="sapi-sb-hero">
                 <p class="sapi-sb-hero-label">Tiempo ahorrado</p>
                 <p class="sapi-sb-hero-val">{txt_ahorro}</p>
-                <p class="sapi-sb-hero-meta">{pct_ahorro:.1f}% menos tiempo · {cantidad} factura(s)</p>
+                <p class="sapi-sb-hero-meta">{pct_ahorro:.1f}% menos tiempo</p>
+                <p class="sapi-sb-hero-qty">{cantidad} factura(s)</p>
             </div>
             <div class="sapi-sb-card">
+                <div>
+                    <div class="sapi-sb-bar-row">
+                        <span class="sapi-sb-bar-name">Carga masiva QR</span>
+                        <span class="sapi-sb-bar-val" style="color: #1d4ed8;">{txt_sistema}</span>
+                    </div>
+                    <div class="sapi-sb-track">
+                        <div class="sapi-sb-fill-sys" style="width: {ancho_sistema_pct:.2f}%;"></div>
+                    </div>
+                </div>
                 <div>
                     <div class="sapi-sb-bar-row">
                         <span class="sapi-sb-bar-name">Carga manual (2 min/fact.)</span>
@@ -1530,15 +1547,6 @@ def render_sidebar_ahorro_tiempo() -> None:
                     </div>
                     <div class="sapi-sb-track">
                         <div class="sapi-sb-fill-manual"></div>
-                    </div>
-                </div>
-                <div>
-                    <div class="sapi-sb-bar-row">
-                        <span class="sapi-sb-bar-name">Sistema masivo QR</span>
-                        <span class="sapi-sb-bar-val" style="color: #1d4ed8;">{txt_sistema}</span>
-                    </div>
-                    <div class="sapi-sb-track">
-                        <div class="sapi-sb-fill-sys" style="width: {ancho_sistema_pct:.2f}%;"></div>
                     </div>
                 </div>
             </div>
